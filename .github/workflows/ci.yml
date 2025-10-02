@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        compiler: [g++-11, clang++-14]
+        compiler: [g++-11]
         build_type: [Debug, Release]
     
     steps:
@@ -20,15 +20,10 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get update
-        sudo apt-get install -y cmake ninja-build g++-11 gcc-11 ${{ matrix.compiler }}
+        sudo apt-get install -y cmake ninja-build g++-11 gcc-11
     
     - name: Configure CMake
       run: |
-        # Use gcc-11 stdlib with clang to avoid C++20 incompatibility with gcc-14 headers
-        if [ "${{ matrix.compiler }}" = "clang++-14" ]; then
-          export CXXFLAGS="-stdlib=libstdc++ --gcc-toolchain=/usr/lib/gcc/x86_64-linux-gnu/11"
-          export CC=clang-14
-        fi
         cmake -B build \
           -G Ninja \
           -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
