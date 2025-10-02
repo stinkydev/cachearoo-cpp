@@ -130,7 +130,7 @@ include(FetchContent)
 # Fetch cachearoo-cpp
 FetchContent_Declare(
     cachearoo
-    GIT_REPOSITORY https://github.com/yourusername/cachearoo-cpp.git
+    GIT_REPOSITORY https://github.com/stinkydev/cachearoo-cpp.git
     GIT_TAG main  # or a specific version tag
 )
 
