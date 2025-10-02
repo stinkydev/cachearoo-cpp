@@ -7,13 +7,7 @@
 using namespace cachearoo;
 
 // Simple calculator service
-vo      // Third request - with Unicode characters (emojis, Chinese, Arabic, Cyrillic)
-      request["operation"] = "divide";
-      request["a"] = 100;
-      request["b"] = 4;
-      request["description"] = "Math operations: 数学 🧮✨";
-
-      std::cout << "\nRequesting: 100 / 4 with Unicode description" << std::endl;eplier() {
+void RunReplier() {
   try {
     CachearooSettings settings;
     settings.host = "localhost";
@@ -153,11 +147,11 @@ void RunRequestor() {
       result_json = nlohmann::json::parse(result);
       std::cout << "Result: " << result_json["result"] << std::endl;
 
-      // Third request - with Unicode characters (emojis, Chinese, Arabic, Cyrillic)
+      // Third request - with Unicode character
       request["operation"] = "divide";
       request["a"] = 100;
       request["b"] = 4;
-      request["description"] = "Math operations: 数学 • الرياضيات • математика • 🧮✨";
+      request["description"] = "Math with emoji: 🧮";
 
       std::cout << "\nRequesting: 100 / 4 with Unicode description" << std::endl;
       result = requestor.Request(request.dump());
@@ -165,7 +159,7 @@ void RunRequestor() {
       std::cout << "Result: " << result_json["result"] << std::endl;
       if (result_json.contains("echo")) {
         std::cout << "Echo: " << result_json["echo"] << std::endl;
-        std::cout << "✓ Unicode characters transmitted successfully!" << std::endl;
+        std::cout << "Unicode transmitted successfully!" << std::endl;
       }
 
     } catch (const std::exception& e) {
