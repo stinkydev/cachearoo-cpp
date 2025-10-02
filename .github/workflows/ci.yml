@@ -35,7 +35,7 @@ jobs:
       run: cmake --build build --config ${{ matrix.build_type }}
     
     - name: Run Tests
-      run: cd build && ctest --output-on-failure -C ${{ matrix.build_type }}
+      run: cd build && ctest --output-on-failure
 
   build-and-test-windows:
     runs-on: windows-latest
@@ -85,7 +85,7 @@ jobs:
       run: cmake --build build --config ${{ matrix.build_type }}
     
     - name: Run Tests
-      run: cd build && ctest --output-on-failure -C ${{ matrix.build_type }}
+      run: cd build && ctest --output-on-failure
 
   code-quality:
     runs-on: ubuntu-latest
