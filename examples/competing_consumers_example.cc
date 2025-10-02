@@ -95,7 +95,7 @@ void RunConsumer() {
       // No workers available
       response(kNoWorkerAvailable, nullptr);
       
-    } catch (const std::exception& e) {
+    } catch (const std::exception&) {
       response(-1, nullptr);
     }
   });

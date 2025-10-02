@@ -338,7 +338,7 @@ void CompetingConsumer::OnJobReceived(const Event& event) {
       JobHandler(key, job);
     }).detach();
     
-  } catch (const std::exception& e) {
+  } catch (const std::exception&) {
     if (OnJob) {
       nlohmann::json job_notification;
       job_notification["id"] = "unknown";
@@ -421,7 +421,7 @@ void CompetingConsumer::JobHandler(const std::string& key, const nlohmann::json&
   } catch (const AlreadyExistsError&) {
     // Job already taken by another consumer, release worker
     worker->Release();
-  } catch (const std::exception& e) {
+  } catch (const std::exception&) {
     worker->Release();
     throw;
   }

@@ -255,7 +255,7 @@ void CachearooClient::ProcessRequestQueue() {
           result = ""; // Delete returns void
         }
         item->promise.set_value(result);
-      } catch (const std::exception& e) {
+      } catch (const std::exception&) {
         item->promise.set_exception(std::current_exception());
       }
       pending_requests_--;

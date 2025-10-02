@@ -188,7 +188,7 @@ void CachearooConnection::OnOpen(ConnectionHdl hdl) {
   }
 }
 
-void CachearooConnection::OnClose(ConnectionHdl hdl) {
+void CachearooConnection::OnClose(ConnectionHdl /* hdl */) {
   if (connected_.load()) {
     connected_.store(false);
     if (on_disconnect_) on_disconnect_(this);
@@ -203,7 +203,7 @@ void CachearooConnection::OnClose(ConnectionHdl hdl) {
   }
 }
 
-void CachearooConnection::OnFail(ConnectionHdl hdl) {
+void CachearooConnection::OnFail(ConnectionHdl /* hdl */) {
   if (on_error_) on_error_("WebSocket connection failed");
   
   // Reconnect if not explicitly closed
@@ -215,7 +215,7 @@ void CachearooConnection::OnFail(ConnectionHdl hdl) {
   }
 }
 
-void CachearooConnection::OnMessage(ConnectionHdl hdl, WebSocketClient::message_ptr msg) {
+void CachearooConnection::OnMessage(ConnectionHdl /* hdl */, WebSocketClient::message_ptr msg) {
   if (msg->get_opcode() == websocketpp::frame::opcode::text) {
     ProcessStringMessage(msg->get_payload());
   } else if (msg->get_opcode() == websocketpp::frame::opcode::binary) {
@@ -405,7 +405,7 @@ void CachearooConnection::AddBinaryListener(const std::string& bucket, const std
   RegisterEvents();
 }
 
-void CachearooConnection::RemoveListener(EventCallback callback) {
+void CachearooConnection::RemoveListener(EventCallback /* callback */) {
   // Note: This is a simplified implementation. In a real implementation,
   // you might want to store callbacks with unique identifiers.
   std::lock_guard<std::mutex> lock(events_mutex_);
@@ -413,7 +413,7 @@ void CachearooConnection::RemoveListener(EventCallback callback) {
   RegisterEvents();
 }
 
-void CachearooConnection::RemoveBinaryListener(BinaryEventCallback callback) {
+void CachearooConnection::RemoveBinaryListener(BinaryEventCallback /* callback */) {
   // Note: Similar to RemoveListener, this is simplified
   std::lock_guard<std::mutex> lock(events_mutex_);
   RegisterEvents();

@@ -135,6 +135,13 @@ if(WIN32)
         NOMINMAX
         _WIN32_WINNT=0x0601
     )
+    
+    # Suppress warnings from external libraries (WebSocket++, ASIO)
+    target_compile_options(cachearoo PRIVATE
+        /wd4127  # conditional expression is constant
+        /wd4244  # conversion from 'type1' to 'type2', possible loss of data
+        /wd4267  # conversion from 'size_t' to 'type', possible loss of data
+    )
 endif()
 
 # Examples

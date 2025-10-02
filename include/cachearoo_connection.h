@@ -14,9 +14,18 @@
 #include <thread>
 #include <vector>
 
+// These macros are defined via CMake target_compile_definitions
+// to avoid redefinition warnings
+#ifndef ASIO_STANDALONE
 #define ASIO_STANDALONE
+#endif
+#ifndef _WEBSOCKETPP_CPP11_RANDOM_DEVICE_
 #define _WEBSOCKETPP_CPP11_RANDOM_DEVICE_
+#endif
+#ifndef _WEBSOCKETPP_CPP11_TYPE_TRAITS_
 #define _WEBSOCKETPP_CPP11_TYPE_TRAITS_
+#endif
+
 #include <websocketpp/config/asio_no_tls_client.hpp>
 #include <websocketpp/client.hpp>
 #include <nlohmann/json.hpp>

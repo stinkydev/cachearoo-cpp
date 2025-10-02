@@ -33,6 +33,11 @@ target_include_directories(cachearoo_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/include
 )
 
+# Suppress external library warnings on Windows
+if(MSVC)
+    target_compile_options(cachearoo_tests PRIVATE /wd4127 /wd4244 /wd4267)
+endif()
+
 # Discover tests
 include(GoogleTest)
 gtest_discover_tests(cachearoo_tests)

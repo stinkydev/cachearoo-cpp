@@ -40,8 +40,12 @@ void RunReplier() {
       std::string operation = json_msg["operation"];
       double a = json_msg["a"];
       double b = json_msg["b"];
+      std::string description = json_msg.value("description", "");
       
       std::cout << "Received calculation request: " << a << " " << operation << " " << b << std::endl;
+      if (!description.empty()) {
+        std::cout << "Description: " << description << std::endl;
+      }
       
       // Simulate some processing time
       progress("Processing calculation...");
@@ -67,6 +71,9 @@ void RunReplier() {
       
       nlohmann::json result_json;
       result_json["result"] = result;
+      if (!description.empty()) {
+        result_json["echo"] = description;
+      }
       response("", result_json.dump());
       
     } catch (const std::exception& e) {
@@ -116,6 +123,7 @@ void RunRequestor() {
   
   // Make some calculation requests
   try {
+    // First request - simple addition
     nlohmann::json request;
     request["operation"] = "add";
     request["a"] = 10;
@@ -129,15 +137,30 @@ void RunRequestor() {
     auto result_json = nlohmann::json::parse(result);
     std::cout << "Result: " << result_json["result"] << std::endl;
     
-    // Another request
+    // Second request - multiplication
     request["operation"] = "multiply";
     request["a"] = 7;
     request["b"] = 8;
     
-    std::cout << "Requesting: 7 * 8" << std::endl;
+    std::cout << "\nRequesting: 7 * 8" << std::endl;
     result = requestor.Request(request.dump());
     result_json = nlohmann::json::parse(result);
     std::cout << "Result: " << result_json["result"] << std::endl;
+    
+    // Third request - with Unicode characters (emojis, Chinese, Arabic, Cyrillic)
+    request["operation"] = "divide";
+    request["a"] = 100;
+    request["b"] = 4;
+    request["description"] = "Math operations: 数学 • الرياضيات • математика • 🧮✨";
+    
+    std::cout << "\nRequesting: 100 / 4 with Unicode description" << std::endl;
+    result = requestor.Request(request.dump());
+    result_json = nlohmann::json::parse(result);
+    std::cout << "Result: " << result_json["result"] << std::endl;
+    if (result_json.contains("echo")) {
+      std::cout << "Echo: " << result_json["echo"] << std::endl;
+      std::cout << "✓ Unicode characters transmitted successfully!" << std::endl;
+    }
     
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
