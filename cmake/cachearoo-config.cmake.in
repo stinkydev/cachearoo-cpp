@@ -1,0 +1,24 @@
+@PACKAGE_INIT@
+
+# Find required dependencies
+find_package(Threads REQUIRED)
+
+# Include the targets file
+include("${CMAKE_CURRENT_LIST_DIR}/cachearoo-targets.cmake")
+
+# Set up include directories for external dependencies
+set(CACHEAROO_INCLUDE_DIRS
+    "${PACKAGE_PREFIX_DIR}/include"
+    "${PACKAGE_PREFIX_DIR}/include/external"
+)
+
+# Define the cachearoo::cachearoo target if not already defined
+if(NOT TARGET cachearoo::cachearoo)
+    add_library(cachearoo::cachearoo ALIAS cachearoo)
+endif()
+
+# Provide variables for backward compatibility
+set(cachearoo_FOUND TRUE)
+set(cachearoo_VERSION "@PROJECT_VERSION@")
+
+check_required_components(cachearoo)

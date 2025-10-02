@@ -1,0 +1,210 @@
+cmake_minimum_required(VERSION 3.20)
+project(cachearoo-cpp VERSION 1.0.0 LANGUAGES CXX)
+
+# Set C++20 standard
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Enable position independent code
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+# Add compiler flags for Google C++ style
+if(MSVC)
+    add_compile_options(/W4 /permissive-)
+else()
+    add_compile_options(-Wall -Wextra -Wpedantic)
+endif()
+
+# Find required packages
+find_package(Threads REQUIRED)
+
+# Include ExternalProject module
+include(ExternalProject)
+
+# Download and configure nlohmann/json
+ExternalProject_Add(
+    nlohmann_json_external
+    GIT_REPOSITORY https://github.com/nlohmann/json.git
+    GIT_TAG v3.11.3
+    CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/external/nlohmann_json
+        -DJSON_BuildTests=OFF
+        -DJSON_Install=ON
+        -DCMAKE_CXX_STANDARD=20
+    UPDATE_COMMAND ""
+)
+
+# Download websocketpp (header-only library)
+ExternalProject_Add(
+    websocketpp_external
+    GIT_REPOSITORY https://github.com/zaphoyd/websocketpp.git
+    GIT_TAG 0.8.2
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR> ${CMAKE_BINARY_DIR}/external/websocketpp
+    UPDATE_COMMAND ""
+)
+
+# Download standalone ASIO (for websocketpp without boost)
+ExternalProject_Add(
+    asio_external
+    GIT_REPOSITORY https://github.com/chriskohlhoff/asio.git
+    GIT_TAG asio-1-29-0
+    CONFIGURE_COMMAND ""
+    BUILD_COMMAND ""
+    INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR>/asio/include ${CMAKE_BINARY_DIR}/external/asio/include
+    UPDATE_COMMAND ""
+)
+
+# Set up include directories
+set(NLOHMANN_JSON_INCLUDE_DIR ${CMAKE_BINARY_DIR}/external/nlohmann_json/include)
+set(WEBSOCKETPP_INCLUDE_DIR ${CMAKE_BINARY_DIR}/external/websocketpp)
+set(ASIO_INCLUDE_DIR ${CMAKE_BINARY_DIR}/external/asio/include)
+
+# Include directories
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+include_directories(${NLOHMANN_JSON_INCLUDE_DIR})
+include_directories(${WEBSOCKETPP_INCLUDE_DIR})
+include_directories(${ASIO_INCLUDE_DIR})
+
+# Create library
+set(CACHEAROO_SOURCES
+    src/cachearoo_client.cc
+    src/cachearoo_connection.cc
+    src/cachearoo_messaging.cc
+)
+
+set(CACHEAROO_HEADERS
+    include/cachearoo.h
+    include/cachearoo_client.h
+    include/cachearoo_connection.h
+    include/cachearoo_messaging.h
+    include/cachearoo_types.h
+)
+
+# Static library
+add_library(cachearoo STATIC ${CACHEAROO_SOURCES} ${CACHEAROO_HEADERS})
+
+# Add dependencies to the library
+add_dependencies(cachearoo nlohmann_json_external websocketpp_external asio_external)
+
+# Link libraries
+target_link_libraries(cachearoo
+    PUBLIC
+        Threads::Threads
+)
+
+# Platform-specific libraries
+if(WIN32)
+    target_link_libraries(cachearoo PRIVATE ws2_32 wsock32)
+elseif(UNIX)
+    target_link_libraries(cachearoo PRIVATE pthread)
+endif()
+
+# Include directories for the library
+target_include_directories(cachearoo
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${NLOHMANN_JSON_INCLUDE_DIR}>
+        $<BUILD_INTERFACE:${WEBSOCKETPP_INCLUDE_DIR}>
+        $<BUILD_INTERFACE:${ASIO_INCLUDE_DIR}>
+        $<INSTALL_INTERFACE:include>
+        $<INSTALL_INTERFACE:include/external>
+)
+
+# Compiler definitions
+target_compile_definitions(cachearoo PRIVATE
+    ASIO_STANDALONE
+    ASIO_HAS_STD_ADDRESSOF
+    ASIO_HAS_STD_ARRAY
+    ASIO_HAS_CSTDINT
+    ASIO_HAS_STD_SHARED_PTR
+    ASIO_HAS_STD_TYPE_TRAITS
+    _WEBSOCKETPP_CPP11_TYPE_TRAITS_
+    _WEBSOCKETPP_CPP11_FUNCTIONAL_
+    _WEBSOCKETPP_CPP11_SYSTEM_ERROR_
+    _WEBSOCKETPP_CPP11_RANDOM_DEVICE_
+    _WEBSOCKETPP_CPP11_MEMORY_
+)
+
+# Windows-specific definitions
+if(WIN32)
+    target_compile_definitions(cachearoo PRIVATE
+        WIN32_LEAN_AND_MEAN
+        NOMINMAX
+        _WIN32_WINNT=0x0601
+    )
+endif()
+
+# Examples
+option(BUILD_EXAMPLES "Build example applications" ON)
+if(BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
+# Tests
+option(BUILD_TESTS "Build tests" OFF)
+if(BUILD_TESTS)
+    add_subdirectory(tests)
+endif()
+
+# Install configuration
+install(TARGETS cachearoo
+    EXPORT cachearoo-targets
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
+
+install(DIRECTORY include/
+    DESTINATION include
+    FILES_MATCHING PATTERN "*.h"
+)
+
+# Install external dependencies headers
+install(DIRECTORY ${NLOHMANN_JSON_INCLUDE_DIR}/
+    DESTINATION include/external
+    FILES_MATCHING PATTERN "*.h" PATTERN "*.hpp"
+)
+
+install(DIRECTORY ${WEBSOCKETPP_INCLUDE_DIR}/websocketpp
+    DESTINATION include/external
+    FILES_MATCHING PATTERN "*.hpp"
+)
+
+install(DIRECTORY ${ASIO_INCLUDE_DIR}/
+    DESTINATION include/external
+    FILES_MATCHING PATTERN "*.hpp" PATTERN "*.ipp"
+)
+
+# Generate and install CMake config files
+include(CMakePackageConfigHelpers)
+
+# Create config file
+configure_package_config_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmake/cachearoo-config.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/cachearoo-config.cmake
+    INSTALL_DESTINATION lib/cmake/cachearoo
+)
+
+# Create version file
+write_basic_package_version_file(
+    ${CMAKE_CURRENT_BINARY_DIR}/cachearoo-config-version.cmake
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+
+# Install config files
+install(FILES
+    ${CMAKE_CURRENT_BINARY_DIR}/cachearoo-config.cmake
+    ${CMAKE_CURRENT_BINARY_DIR}/cachearoo-config-version.cmake
+    DESTINATION lib/cmake/cachearoo
+)
+
+# Install targets export
+install(EXPORT cachearoo-targets
+    FILE cachearoo-targets.cmake
+    NAMESPACE cachearoo::
+    DESTINATION lib/cmake/cachearoo
+)
