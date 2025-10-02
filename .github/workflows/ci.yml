@@ -1,0 +1,131 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test-linux:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [g++-11, clang++-14]
+        build_type: [Debug, Release]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build ${{ matrix.compiler }}
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DCMAKE_CXX_COMPILER=${{ matrix.compiler }} \
+          -DBUILD_EXAMPLES=ON \
+          -DBUILD_TESTS=ON
+    
+    - name: Build
+      run: cmake --build build --config ${{ matrix.build_type }}
+    
+    - name: Run Tests
+      run: cd build && ctest --output-on-failure -C ${{ matrix.build_type }}
+
+  build-and-test-windows:
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build `
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} `
+          -DBUILD_EXAMPLES=ON `
+          -DBUILD_TESTS=ON
+    
+    - name: Build
+      run: cmake --build build --config ${{ matrix.build_type }}
+    
+    - name: Run Tests
+      run: |
+        cd build
+        ctest --output-on-failure -C ${{ matrix.build_type }}
+
+  build-and-test-macos:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: brew install cmake ninja
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{ matrix.build_type }} \
+          -DBUILD_EXAMPLES=ON \
+          -DBUILD_TESTS=ON
+    
+    - name: Build
+      run: cmake --build build --config ${{ matrix.build_type }}
+    
+    - name: Run Tests
+      run: cd build && ctest --output-on-failure -C ${{ matrix.build_type }}
+
+  code-quality:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install clang-format
+      run: sudo apt-get install -y clang-format-14
+    
+    - name: Check code formatting
+      run: |
+        find include src examples tests -name '*.cc' -o -name '*.h' | \
+          xargs clang-format-14 --dry-run --Werror
+
+  build-examples:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y cmake ninja-build g++-11
+    
+    - name: Configure CMake
+      run: |
+        cmake -B build \
+          -G Ninja \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_CXX_COMPILER=g++-11 \
+          -DBUILD_EXAMPLES=ON
+    
+    - name: Build Examples
+      run: cmake --build build --config Release
+    
+    - name: Verify Examples Built
+      run: |
+        test -f build/examples/basic_example
+        test -f build/examples/request_reply_example
+        test -f build/examples/competing_consumers_example
+        echo "✓ All examples built successfully"

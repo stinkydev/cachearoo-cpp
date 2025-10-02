@@ -680,6 +680,55 @@ try {
 
 [License information here]
 
+## Testing
+
+The library includes comprehensive unit tests using Google Test.
+
+### Running Tests
+
+```bash
+# Configure with tests enabled
+cmake -B build -DBUILD_TESTS=ON
+
+# Build tests
+cmake --build build --config Debug
+
+# Run tests
+cd build
+ctest --output-on-failure -C Debug
+
+# Or run tests directly
+./tests/cachearoo_tests           # Linux/macOS
+.\tests\Debug\cachearoo_tests.exe # Windows
+```
+
+### Test Coverage
+
+The test suite includes:
+- **Type tests**: Settings, options, events, and data structures
+- **Settings validation**: Port ranges, secure connections, ping configuration
+- **JSON serialization**: Request/response formatting and parsing
+- **Callback tests**: Progress, message response, and event callbacks
+- **Error handling**: Exception hierarchy and error propagation
+- **Message patterns**: Request-reply and competing consumers formats
+
+All tests are **mock-based** and don't require a running Cachearoo server, making them fast and reliable for CI/CD pipelines.
+
+### Continuous Integration
+
+The project uses GitHub Actions for CI across multiple platforms:
+- **Linux**: Ubuntu with GCC 11+ and Clang 14+
+- **Windows**: Visual Studio 2022
+- **macOS**: Latest Xcode
+
+CI automatically:
+- Builds the library on all platforms
+- Runs the complete test suite
+- Builds all example applications
+- Checks code formatting (clang-format)
+
+See `.github/workflows/ci.yml` for the complete CI configuration.
+
 ## Troubleshooting
 
 ### Build Issues
