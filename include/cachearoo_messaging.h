@@ -25,15 +25,14 @@ class CachearooClient;
 // Request-Reply Pattern Classes
 class Requestor {
  public:
-  Requestor(CachearooClient* client, const std::string& channel, 
-            int timeout = 5000, int progress_timeout = 5000);
+  Requestor(CachearooClient* client, const std::string& channel, int timeout = 5000,
+            int progress_timeout = 5000);
   ~Requestor();
 
-  std::future<std::string> RequestAsync(const std::string& message, 
+  std::future<std::string> RequestAsync(const std::string& message,
                                         ProgressCallback progress_callback = nullptr,
                                         int timeout = 0, int progress_timeout = 0);
-  std::string Request(const std::string& message, 
-                      ProgressCallback progress_callback = nullptr,
+  std::string Request(const std::string& message, ProgressCallback progress_callback = nullptr,
                       int timeout = 0, int progress_timeout = 0);
   void Destroy();
 
@@ -54,10 +53,10 @@ class Requestor {
   std::string progress_channel_;
   int timeout_;
   int progress_timeout_;
-  
+
   std::map<std::string, std::unique_ptr<PendingRequest>> pending_requests_;
   std::mutex requests_mutex_;
-  
+
   std::thread timeout_thread_;
   std::atomic<bool> shutdown_{false};
   EventCallback reply_listener_;
@@ -86,12 +85,12 @@ class Replier {
 class Worker {
  public:
   explicit Worker(const std::string& id) : id_(id), available_(true) {}
-  
+
   const std::string& GetId() const { return id_; }
   bool IsAvailable() const { return available_.load(); }
   void SetAvailable(bool available) { available_.store(available); }
   void Release() { available_.store(true); }
-  
+
   void SetWorkHandler(WorkCallback handler) { work_handler_ = std::move(handler); }
   WorkCallback GetWorkHandler() const { return work_handler_; }
 
@@ -103,15 +102,14 @@ class Worker {
 
 class Producer {
  public:
-  Producer(CachearooClient* client, const std::string& channel, 
-           int timeout = 10000, int progress_timeout = 10000);
+  Producer(CachearooClient* client, const std::string& channel, int timeout = 10000,
+           int progress_timeout = 10000);
   ~Producer();
 
-  std::future<std::string> AddJobAsync(const std::string& job, 
+  std::future<std::string> AddJobAsync(const std::string& job,
                                        ProgressCallback progress_callback = nullptr,
                                        int timeout = 0, int progress_timeout = 0);
-  std::string AddJob(const std::string& job, 
-                     ProgressCallback progress_callback = nullptr,
+  std::string AddJob(const std::string& job, ProgressCallback progress_callback = nullptr,
                      int timeout = 0, int progress_timeout = 0);
   void Destroy();
 
@@ -131,10 +129,10 @@ class Producer {
   std::string status_queue_;
   int timeout_;
   int progress_timeout_;
-  
+
   std::map<std::string, std::unique_ptr<PendingJob>> pending_jobs_;
   std::mutex jobs_mutex_;
-  
+
   std::thread timeout_thread_;
   std::atomic<bool> shutdown_{false};
   EventCallback job_status_listener_;
@@ -142,7 +140,7 @@ class Producer {
 
 class CompetingConsumer {
  public:
-  CompetingConsumer(CachearooClient* client, const std::string& channel, 
+  CompetingConsumer(CachearooClient* client, const std::string& channel,
                     const std::string& client_id);
   ~CompetingConsumer();
 
@@ -163,7 +161,7 @@ class CompetingConsumer {
   std::string status_queue_;
   std::string client_id_;
   JobQueryCallback job_query_handler_;
-  
+
   std::atomic<int> job_count_{0};
   EventCallback job_queue_listener_;
 };

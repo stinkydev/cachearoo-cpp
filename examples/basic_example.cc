@@ -15,17 +15,17 @@ int main() {
     settings.bucket = "test-bucket";
     settings.enable_ping = true;
     settings.client_id = "basic-example-client";
-    
+
     std::cout << "Creating Cachearoo client..." << std::endl;
     CachearooClient client(settings);
-    
+
     // Wait for connection
     std::cout << "Waiting for connection..." << std::endl;
     while (!client.IsConnected()) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     std::cout << "Connected!" << std::endl;
-    
+
     try {
       // Write some data
       std::cout << "Writing data..." << std::endl;
@@ -50,7 +50,7 @@ int main() {
       RequestOptions list_options;
       list_options.keys_only = true;
       auto items = client.List(list_options);
-      
+
       std::cout << "Found " << items.size() << " items:" << std::endl;
       for (const auto& item : items) {
         std::cout << "  Key: " << item.key << ", Size: " << item.size << std::endl;
@@ -63,7 +63,7 @@ int main() {
       // Update the data using patch
       std::cout << "Patching data..." << std::endl;
       client.Patch("test-key", R"({"message": "Hello, Updated Cachearoo!"})");
-      
+
       // Read the updated data
       std::string updated_data = client.Read("test-key");
       std::cout << "Updated data: " << updated_data << std::endl;
@@ -78,13 +78,13 @@ int main() {
     } catch (const std::exception& e) {
       std::cerr << "Remove failed: " << e.what() << std::endl;
     }
-    
+
     std::cout << "Basic example completed successfully!" << std::endl;
-    
+
   } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
   }
-  
+
   return 0;
 }

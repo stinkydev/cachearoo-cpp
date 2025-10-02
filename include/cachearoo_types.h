@@ -31,7 +31,7 @@ class TimeoutError : public std::exception {
  public:
   explicit TimeoutError(const std::string& message, bool progress_timeout = false)
       : message_(message), progress_timeout_(progress_timeout) {}
-  
+
   const char* what() const noexcept override { return message_.c_str(); }
   bool IsProgressTimeout() const { return progress_timeout_; }
 
@@ -119,14 +119,19 @@ using ErrorCallback = std::function<void(const std::string&)>;
 using PongCallback = std::function<void()>;
 
 // Messaging callback types
-using MessageResponseCallback = std::function<void(const std::string& error, const std::string& data)>;
+using MessageResponseCallback =
+    std::function<void(const std::string& error, const std::string& data)>;
 using ProgressCallback = std::function<void(const std::string& data)>;
-using MessageCallback = std::function<void(const std::string& message, MessageResponseCallback response, ProgressCallback progress)>;
+using MessageCallback = std::function<void(
+    const std::string& message, MessageResponseCallback response, ProgressCallback progress)>;
 
 // Work callback types
-using WorkCallback = std::function<void(const std::string& job, MessageResponseCallback callback, ProgressCallback progress_callback)>;
-using JobQueryResponseCallback = std::function<void(int error_code, std::shared_ptr<class Worker> worker)>;
-using JobQueryCallback = std::function<void(const std::string& job, JobQueryResponseCallback response)>;
+using WorkCallback = std::function<void(const std::string& job, MessageResponseCallback callback,
+                                        ProgressCallback progress_callback)>;
+using JobQueryResponseCallback =
+    std::function<void(int error_code, std::shared_ptr<class Worker> worker)>;
+using JobQueryCallback =
+    std::function<void(const std::string& job, JobQueryResponseCallback response)>;
 
 // Utility function
 std::string GenerateUuid();

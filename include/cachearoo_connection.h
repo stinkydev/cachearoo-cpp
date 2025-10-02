@@ -54,8 +54,8 @@ class CachearooConnection {
   void SetOnPong(PongCallback callback) { on_pong_ = std::move(callback); }
 
   // Event listeners
-  void AddListener(const std::string& bucket, const std::string& key, 
-                   bool send_values, EventCallback callback);
+  void AddListener(const std::string& bucket, const std::string& key, bool send_values,
+                   EventCallback callback);
   void AddBinaryListener(const std::string& bucket, const std::string& key,
                          BinaryEventCallback callback);
   void RemoveListener(EventCallback callback);
@@ -64,18 +64,16 @@ class CachearooConnection {
 
   // Data operations
   std::string Read(const std::string& bucket, const std::string& key);
-  std::vector<ListReplyItem> List(const std::string& bucket, bool keys_only, 
+  std::vector<ListReplyItem> List(const std::string& bucket, bool keys_only,
                                   const std::string& filter);
-  std::string Write(const std::string& bucket, const std::string& key, 
-                    const std::string& value, bool fail_if_exists = false,
-                    const std::string& expire = "");
-  std::string Patch(const std::string& bucket, const std::string& key,
-                    const std::string& patch, bool remove_data_from_reply = false);
+  std::string Write(const std::string& bucket, const std::string& key, const std::string& value,
+                    bool fail_if_exists = false, const std::string& expire = "");
+  std::string Patch(const std::string& bucket, const std::string& key, const std::string& patch,
+                    bool remove_data_from_reply = false);
   void Delete(const std::string& bucket, const std::string& key);
-  void SignalEvent(const std::string& bucket, const std::string& key,
-                   const std::string& value);
-  void SignalBinaryEvent(int type, const std::string& bucket, 
-                         const std::string& key, const std::vector<uint8_t>& value);
+  void SignalEvent(const std::string& bucket, const std::string& key, const std::string& value);
+  void SignalBinaryEvent(int type, const std::string& bucket, const std::string& key,
+                         const std::vector<uint8_t>& value);
 
   // Generic request method
   std::string Request(const RequestOptionsInternal& options);
@@ -108,7 +106,6 @@ class CachearooConnection {
   void OnFail(ConnectionHdl hdl);
   void OnMessage(ConnectionHdl hdl, WebSocketClient::message_ptr msg);
 
-
   // Message processing
   void ProcessStringMessage(const std::string& message);
   void ProcessBinaryMessage(const std::vector<uint8_t>& data);
@@ -128,31 +125,31 @@ class CachearooConnection {
   std::atomic<bool> skip_reconnect_{false};
   std::string id_;
   bool send_values_{false};
-  
+
   // WebSocket client
   std::unique_ptr<WebSocketClient> ws_client_;
   ConnectionHdl connection_hdl_;
-  
+
   // Threading
   std::thread io_thread_;
   std::thread timeout_thread_;
-  
+
   // Event handling
   std::vector<EventRegistration> event_registrations_;
   std::vector<BinaryEventRegistration> binary_event_registrations_;
   mutable std::mutex events_mutex_;
-  
+
   // Request handling
   std::map<std::string, std::unique_ptr<PendingRequest>> pending_requests_;
   mutable std::mutex requests_mutex_;
   int request_id_counter_{0};
-  
+
   // Callbacks
   ConnectCallback on_connect_;
   DisconnectCallback on_disconnect_;
   ErrorCallback on_error_;
   PongCallback on_pong_;
-  
+
   // Ping handling
   std::thread ping_thread_;
   std::condition_variable ping_cv_;
