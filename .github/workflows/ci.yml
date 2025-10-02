@@ -26,7 +26,7 @@ jobs:
       run: |
         # Use gcc-11 stdlib with clang to avoid C++20 incompatibility with gcc-14 headers
         if [ "${{ matrix.compiler }}" = "clang++-14" ]; then
-          export CXXFLAGS="-stdlib=libstdc++ --gcc-toolchain=/usr"
+          export CXXFLAGS="-stdlib=libstdc++ --gcc-toolchain=/usr/lib/gcc/x86_64-linux-gnu/11"
           export CC=clang-14
         fi
         cmake -B build \
