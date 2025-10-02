@@ -7,7 +7,13 @@
 using namespace cachearoo;
 
 // Simple calculator service
-void RunReplier() {
+vo      // Third request - with Unicode characters (emojis, Chinese, Arabic, Cyrillic)
+      request["operation"] = "divide";
+      request["a"] = 100;
+      request["b"] = 4;
+      request["description"] = "Math operations: 数学 🧮✨";
+
+      std::cout << "\nRequesting: 100 / 4 with Unicode description" << std::endl;eplier() {
   try {
     CachearooSettings settings;
     settings.host = "localhost";

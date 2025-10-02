@@ -36,13 +36,14 @@ ExternalProject_Add(
 )
 
 # Download websocketpp (header-only library)
-# Using master branch for C++20 compatibility (0.8.2 has C++20 compilation issues)
+# Using 0.8.2 with C++20 compatibility fix applied via CMake script
 ExternalProject_Add(
     websocketpp_external
     GIT_REPOSITORY https://github.com/zaphoyd/websocketpp.git
-    GIT_TAG master
+    GIT_TAG 0.8.2
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
+    PATCH_COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=<SOURCE_DIR> -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/fix-websocketpp.cmake
     INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR> ${CMAKE_BINARY_DIR}/external/websocketpp
     UPDATE_COMMAND ""
 )
