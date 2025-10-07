@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(cachearoo-cpp VERSION 1.0.1 LANGUAGES CXX)
+project(cachearoo-cpp VERSION 1.0.2 LANGUAGES CXX)
 
 # Set C++20 standard
 set(CMAKE_CXX_STANDARD 20)
@@ -45,11 +45,10 @@ endif()
 # Using 0.8.2 with C++20 compatibility fix applied via CMake script
 ExternalProject_Add(
     websocketpp_external
-    GIT_REPOSITORY https://github.com/zaphoyd/websocketpp.git
-    GIT_TAG 0.8.2
+    GIT_REPOSITORY https://github.com/stinkydev/websocketpp.git
+    GIT_TAG master
     CONFIGURE_COMMAND ""
     BUILD_COMMAND ""
-    PATCH_COMMAND ${CMAKE_COMMAND} -DSOURCE_DIR=<SOURCE_DIR> -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/fix-websocketpp.cmake
     INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory <SOURCE_DIR> ${CMAKE_BINARY_DIR}/external/websocketpp
     UPDATE_COMMAND ""
 )
