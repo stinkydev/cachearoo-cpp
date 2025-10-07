@@ -82,10 +82,10 @@ std::vector<ListReplyItem> CachearooClient::List(const RequestOptions& options) 
     list_item.key = item.value("key", "");
     list_item.timestamp = item.value("timestamp", "");
     list_item.size = item.value("size", 0);
-    if (item.contains("expire")) {
+    if ((item.contains("expire")) && (!item["expire"].is_null())) {
       list_item.expire = item["expire"].get<std::string>();
     }
-    if (item.contains("content")) {
+    if ((item.contains("content")) && (!item["content"].is_null())) {
       list_item.content = item["content"].dump();
     }
     items.push_back(list_item);
@@ -124,7 +124,7 @@ RequestOptionsInternal CachearooClient::InternalizeRequestOptions(const std::str
   RequestOptionsInternal opt;
   static_cast<RequestOptions&>(opt) = options;
 
-  opt.url = GetUrl(key, bucket, options.keys_only, options.filter.value_or(""));
+  opt.url = GetUrl(key, bucket, options.keys_only.value_or(true), options.filter.value_or(""));
   opt.bucket = bucket;
   opt.key = key;
   opt.async = async;
@@ -210,7 +210,7 @@ void CachearooClient::ProcessRequestQueue() {
             // List operation
             auto list_result =
                 connection_->List(item->options.bucket.value_or(settings_.bucket),
-                                  item->options.keys_only, item->options.filter.value_or(""));
+                                  item->options.keys_only.value_or(true), item->options.filter.value_or(""));
             nlohmann::json json_array = nlohmann::json::array();
             for (const auto& list_item : list_result) {
               nlohmann::json item_json;
