@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(cachearoo-cpp VERSION 1.0.2 LANGUAGES CXX)
+project(cachearoo-cpp VERSION 1.0.3 LANGUAGES CXX)
 
 # Set C++20 standard
 set(CMAKE_CXX_STANDARD 20)

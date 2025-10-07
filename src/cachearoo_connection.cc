@@ -466,10 +466,10 @@ std::vector<ListReplyItem> CachearooConnection::List(const std::string& bucket, 
     list_item.key = item.value("key", "");
     list_item.timestamp = item.value("timestamp", "");
     list_item.size = item.value("size", 0);
-    if (item.contains("expire")) {
+    if ((item.contains("expire")) && (!item["expire"].is_null())) {
       list_item.expire = item["expire"].get<std::string>();
     }
-    if (item.contains("content")) {
+    if ((item.contains("content")) && (!item["content"].is_null())) {
       list_item.content = item["content"].dump();
     }
     items.push_back(list_item);
