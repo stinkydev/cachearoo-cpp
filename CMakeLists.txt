@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.20)
-project(cachearoo-cpp VERSION 1.0.0 LANGUAGES CXX)
+project(cachearoo-cpp VERSION 1.0.1 LANGUAGES CXX)
 
 # Set C++20 standard
 set(CMAKE_CXX_STANDARD 20)
@@ -22,18 +22,24 @@ find_package(Threads REQUIRED)
 # Include ExternalProject module
 include(ExternalProject)
 
-# Download and configure nlohmann/json
-ExternalProject_Add(
-    nlohmann_json_external
-    GIT_REPOSITORY https://github.com/nlohmann/json.git
-    GIT_TAG v3.11.3
-    CMAKE_ARGS
-        -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/external/nlohmann_json
-        -DJSON_BuildTests=OFF
-        -DJSON_Install=ON
-        -DCMAKE_CXX_STANDARD=20
-    UPDATE_COMMAND ""
-)
+# Check if nlohmann_json is already provided by parent project
+if(NOT DEFINED NLOHMANN_JSON_INCLUDE_DIR)
+    # Download and configure nlohmann/json only if not provided
+    ExternalProject_Add(
+        nlohmann_json_external
+        GIT_REPOSITORY https://github.com/nlohmann/json.git
+        GIT_TAG v3.11.3
+        CMAKE_ARGS
+            -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/external/nlohmann_json
+            -DJSON_BuildTests=OFF
+            -DJSON_Install=ON
+            -DCMAKE_CXX_STANDARD=20
+        UPDATE_COMMAND ""
+    )
+    set(NLOHMANN_JSON_INCLUDE_DIR ${CMAKE_BINARY_DIR}/external/nlohmann_json/include)
+else()
+    message(STATUS "Using nlohmann_json from parent project: ${NLOHMANN_JSON_INCLUDE_DIR}")
+endif()
 
 # Download websocketpp (header-only library)
 # Using 0.8.2 with C++20 compatibility fix applied via CMake script
@@ -60,7 +66,6 @@ ExternalProject_Add(
 )
 
 # Set up include directories
-set(NLOHMANN_JSON_INCLUDE_DIR ${CMAKE_BINARY_DIR}/external/nlohmann_json/include)
 set(WEBSOCKETPP_INCLUDE_DIR ${CMAKE_BINARY_DIR}/external/websocketpp)
 set(ASIO_INCLUDE_DIR ${CMAKE_BINARY_DIR}/external/asio/include)
 
@@ -89,7 +94,11 @@ set(CACHEAROO_HEADERS
 add_library(cachearoo STATIC ${CACHEAROO_SOURCES} ${CACHEAROO_HEADERS})
 
 # Add dependencies to the library
-add_dependencies(cachearoo nlohmann_json_external websocketpp_external asio_external)
+if(TARGET nlohmann_json_external)
+    add_dependencies(cachearoo nlohmann_json_external websocketpp_external asio_external)
+else()
+    add_dependencies(cachearoo websocketpp_external asio_external)
+endif()
 
 # Link libraries
 target_link_libraries(cachearoo
