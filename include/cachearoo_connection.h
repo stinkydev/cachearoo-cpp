@@ -26,9 +26,9 @@
 #define _WEBSOCKETPP_CPP11_TYPE_TRAITS_
 #endif
 
-#include <websocketpp/config/asio_no_tls_client.hpp>
-#include <websocketpp/client.hpp>
 #include <nlohmann/json.hpp>
+#include <websocketpp/client.hpp>
+#include <websocketpp/config/asio_no_tls_client.hpp>
 
 #include "cachearoo_types.h"
 
@@ -48,14 +48,18 @@ class CachearooConnection {
   const std::string& GetId() const { return id_; }
 
   // Event callbacks
-  void SetOnConnect(ConnectCallback callback) { on_connect_ = std::move(callback); }
-  void SetOnDisconnect(DisconnectCallback callback) { on_disconnect_ = std::move(callback); }
+  void SetOnConnect(ConnectCallback callback) {
+    on_connect_ = std::move(callback);
+  }
+  void SetOnDisconnect(DisconnectCallback callback) {
+    on_disconnect_ = std::move(callback);
+  }
   void SetOnError(ErrorCallback callback) { on_error_ = std::move(callback); }
   void SetOnPong(PongCallback callback) { on_pong_ = std::move(callback); }
 
   // Event listeners
-  void AddListener(const std::string& bucket, const std::string& key, bool send_values,
-                   EventCallback callback);
+  void AddListener(const std::string& bucket, const std::string& key,
+                   bool send_values, EventCallback callback);
   void AddBinaryListener(const std::string& bucket, const std::string& key,
                          BinaryEventCallback callback);
   void RemoveListener(EventCallback callback);
@@ -66,13 +70,17 @@ class CachearooConnection {
   std::string Read(const std::string& bucket, const std::string& key);
   std::vector<ListReplyItem> List(const std::string& bucket, bool keys_only,
                                   const std::string& filter);
-  std::string Write(const std::string& bucket, const std::string& key, const std::string& value,
-                    bool fail_if_exists = false, const std::string& expire = "");
-  std::string Patch(const std::string& bucket, const std::string& key, const std::string& patch,
+  std::string Write(const std::string& bucket, const std::string& key,
+                    const std::string& value, bool fail_if_exists = false,
+                    const std::string& expire = "");
+  std::string Patch(const std::string& bucket, const std::string& key,
+                    const std::string& patch,
                     bool remove_data_from_reply = false);
   void Delete(const std::string& bucket, const std::string& key);
-  void SignalEvent(const std::string& bucket, const std::string& key, const std::string& value);
-  void SignalBinaryEvent(int type, const std::string& bucket, const std::string& key,
+  void SignalEvent(const std::string& bucket, const std::string& key,
+                   const std::string& value);
+  void SignalBinaryEvent(int type, const std::string& bucket,
+                         const std::string& key,
                          const std::vector<uint8_t>& value);
 
   // Generic request method
@@ -115,7 +123,8 @@ class CachearooConnection {
   void StartConnection();
   void RegisterEvents();
   void CheckRequestTimeouts();
-  void AddRequest(const nlohmann::json& request, std::promise<std::string>& promise);
+  void AddRequest(const nlohmann::json& request,
+                  std::promise<std::string>& promise);
   std::vector<uint8_t> HeaderToBuffer(const BinaryHeader& header);
   BinaryHeader BufferToHeader(const std::vector<uint8_t>& buffer);
 

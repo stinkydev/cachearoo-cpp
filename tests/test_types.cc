@@ -1,4 +1,5 @@
 #include <gtest/gtest.h>
+
 #include "cachearoo_types.h"
 
 using namespace cachearoo;

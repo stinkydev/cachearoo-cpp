@@ -167,6 +167,47 @@ if(BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+# Add clang-format target
+find_program(CLANG_FORMAT_EXECUTABLE
+    NAMES clang-format clang-format-18 clang-format-17 clang-format-16 clang-format-15
+    DOC "Path to clang-format executable"
+)
+
+if(CLANG_FORMAT_EXECUTABLE)
+    # Collect all source files to format
+    file(GLOB_RECURSE ALL_SOURCE_FILES
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/*.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/include/*.hpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/*.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/examples/*.cpp
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cc
+        ${CMAKE_CURRENT_SOURCE_DIR}/tests/*.cpp
+    )
+
+    # Add format target
+    add_custom_target(format
+        COMMAND ${CLANG_FORMAT_EXECUTABLE} -i -style=Google ${ALL_SOURCE_FILES}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Formatting source code with clang-format (Google style)"
+        VERBATIM
+    )
+
+    # Add format-check target
+    add_custom_target(format-check
+        COMMAND ${CLANG_FORMAT_EXECUTABLE} --dry-run --Werror -style=Google ${ALL_SOURCE_FILES}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+        COMMENT "Checking source code format with clang-format (Google style)"
+        VERBATIM
+    )
+
+    message(STATUS "clang-format found: ${CLANG_FORMAT_EXECUTABLE}")
+    message(STATUS "Added targets: 'format' and 'format-check'")
+else()
+    message(WARNING "clang-format not found. Code formatting targets will not be available.")
+endif()
+
 # Install configuration
 install(TARGETS cachearoo
     EXPORT cachearoo-targets

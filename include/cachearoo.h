@@ -3,10 +3,10 @@
 
 // Main include file for Cachearoo C++ library
 
-#include "cachearoo_types.h"
 #include "cachearoo_client.h"
 #include "cachearoo_connection.h"
 #include "cachearoo_messaging.h"
+#include "cachearoo_types.h"
 
 namespace cachearoo {
 

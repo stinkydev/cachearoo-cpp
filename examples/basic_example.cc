@@ -1,6 +1,6 @@
+#include <chrono>
 #include <iostream>
 #include <thread>
-#include <chrono>
 
 #include "cachearoo.h"
 
@@ -29,7 +29,8 @@ int main() {
     try {
       // Write some data
       std::cout << "Writing data..." << std::endl;
-      std::string key = client.Write("test-key", R"({"message": "Hello, Cachearoo!"})");
+      std::string key =
+          client.Write("test-key", R"({"message": "Hello, Cachearoo!"})");
       std::cout << "Written to key: " << key << std::endl;
     } catch (const std::exception& e) {
       std::cerr << "Write failed: " << e.what() << std::endl;
@@ -53,7 +54,8 @@ int main() {
 
       std::cout << "Found " << items.size() << " items:" << std::endl;
       for (const auto& item : items) {
-        std::cout << "  Key: " << item.key << ", Size: " << item.size << std::endl;
+        std::cout << "  Key: " << item.key << ", Size: " << item.size
+                  << std::endl;
       }
     } catch (const std::exception& e) {
       std::cerr << "List failed: " << e.what() << std::endl;

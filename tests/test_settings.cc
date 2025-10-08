@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
-#include "cachearoo.h"
-#include <thread>
+
 #include <chrono>
+#include <thread>
+
+#include "cachearoo.h"
 
 using namespace cachearoo;
 

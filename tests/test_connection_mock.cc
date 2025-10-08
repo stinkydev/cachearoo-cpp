@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
-#include "cachearoo.h"
+
 #include <nlohmann/json.hpp>
+
+#include "cachearoo.h"
 
 using namespace cachearoo;
 
@@ -42,7 +44,8 @@ TEST(CallbackTest, MessageResponseCallbackSignature) {
   std::string received_error;
   std::string received_data;
 
-  MessageResponseCallback callback = [&](const std::string& error, const std::string& data) {
+  MessageResponseCallback callback = [&](const std::string& error,
+                                         const std::string& data) {
     callback_called = true;
     received_error = error;
     received_data = data;

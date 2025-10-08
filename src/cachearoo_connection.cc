@@ -1,14 +1,13 @@
 #include "cachearoo_connection.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cstring>
+#include <deque>
+#include <nlohmann/json.hpp>
 #include <random>
 #include <set>
 #include <sstream>
-#include <algorithm>
-#include <deque>
-
-#include <nlohmann/json.hpp>
 
 namespace cachearoo {
 
@@ -44,10 +43,12 @@ std::string GenerateUuid() {
   return ss.str();
 }
 
-CachearooConnection::CachearooConnection(const CachearooSettings& settings) : settings_(settings) {
+CachearooConnection::CachearooConnection(const CachearooSettings& settings)
+    : settings_(settings) {
   // For now, only support non-secure WebSocket
   if (settings_.secure) {
-    throw std::runtime_error("Secure WebSocket (WSS) not supported in this build");
+    throw std::runtime_error(
+        "Secure WebSocket (WSS) not supported in this build");
   }
 
   ws_client_ = std::make_unique<WebSocketClient>();
@@ -63,7 +64,9 @@ CachearooConnection::CachearooConnection(const CachearooSettings& settings) : se
   ws_client_->set_close_handler([this](ConnectionHdl hdl) { OnClose(hdl); });
   ws_client_->set_fail_handler([this](ConnectionHdl hdl) { OnFail(hdl); });
   ws_client_->set_message_handler(
-      [this](ConnectionHdl hdl, WebSocketClient::message_ptr msg) { OnMessage(hdl, msg); });
+      [this](ConnectionHdl hdl, WebSocketClient::message_ptr msg) {
+        OnMessage(hdl, msg);
+      });
 
   StartConnection();
 
@@ -75,13 +78,15 @@ CachearooConnection::CachearooConnection(const CachearooSettings& settings) : se
     ping_thread_ = std::thread([this]() {
       std::unique_lock<std::mutex> lock(ping_mutex_);
       while (!skip_reconnect_.load()) {
-        ping_cv_.wait_for(lock, std::chrono::milliseconds(settings_.ping_interval));
+        ping_cv_.wait_for(lock,
+                          std::chrono::milliseconds(settings_.ping_interval));
         if (!skip_reconnect_.load() && connected_.load()) {
           nlohmann::json ping_msg;
           ping_msg["msg"] = "ping";
 
           if (ws_client_) {
-            ws_client_->send(connection_hdl_, ping_msg.dump(), websocketpp::frame::opcode::text);
+            ws_client_->send(connection_hdl_, ping_msg.dump(),
+                             websocketpp::frame::opcode::text);
           }
         }
       }
@@ -89,9 +94,7 @@ CachearooConnection::CachearooConnection(const CachearooSettings& settings) : se
   }
 }
 
-CachearooConnection::~CachearooConnection() {
-  Close();
-}
+CachearooConnection::~CachearooConnection() { Close(); }
 
 void CachearooConnection::Close() {
   skip_reconnect_.store(true);
@@ -106,7 +109,8 @@ void CachearooConnection::Close() {
   // Close WebSocket connection
   if (ws_client_) {
     try {
-      ws_client_->close(connection_hdl_, websocketpp::close::status::going_away, "");
+      ws_client_->close(connection_hdl_, websocketpp::close::status::going_away,
+                        "");
     } catch (...) {
       // Ignore close errors
     }
@@ -136,15 +140,15 @@ void CachearooConnection::StartConnection() {
   connected_.store(false);
 
   std::string protocol = "ws://";  // Only support non-secure for now
-  std::string url = protocol + settings_.host + ":" + std::to_string(settings_.port) +
-                    settings_.path + "?id=" + settings_.client_id;
+  std::string url = protocol + settings_.host + ":" +
+                    std::to_string(settings_.port) + settings_.path +
+                    "?id=" + settings_.client_id;
 
   // Create connection
   websocketpp::lib::error_code ec;
   auto con = ws_client_->get_connection(url, ec);
   if (ec) {
-    if (on_error_)
-      on_error_("Failed to create connection: " + ec.message());
+    if (on_error_) on_error_("Failed to create connection: " + ec.message());
     return;
   }
 
@@ -189,8 +193,7 @@ void CachearooConnection::OnOpen(ConnectionHdl hdl) {
 void CachearooConnection::OnClose(ConnectionHdl /* hdl */) {
   if (connected_.load()) {
     connected_.store(false);
-    if (on_disconnect_)
-      on_disconnect_(this);
+    if (on_disconnect_) on_disconnect_(this);
   }
 
   // Reconnect if not explicitly closed
@@ -203,8 +206,7 @@ void CachearooConnection::OnClose(ConnectionHdl /* hdl */) {
 }
 
 void CachearooConnection::OnFail(ConnectionHdl /* hdl */) {
-  if (on_error_)
-    on_error_("WebSocket connection failed");
+  if (on_error_) on_error_("WebSocket connection failed");
 
   // Reconnect if not explicitly closed
   if (!skip_reconnect_.load()) {
@@ -215,7 +217,8 @@ void CachearooConnection::OnFail(ConnectionHdl /* hdl */) {
   }
 }
 
-void CachearooConnection::OnMessage(ConnectionHdl /* hdl */, WebSocketClient::message_ptr msg) {
+void CachearooConnection::OnMessage(ConnectionHdl /* hdl */,
+                                    WebSocketClient::message_ptr msg) {
   if (msg->get_opcode() == websocketpp::frame::opcode::text) {
     ProcessStringMessage(msg->get_payload());
   } else if (msg->get_opcode() == websocketpp::frame::opcode::binary) {
@@ -232,8 +235,7 @@ void CachearooConnection::ProcessStringMessage(const std::string& message) {
     // Handle connection ID
     if (json_msg.contains("id")) {
       id_ = json_msg["id"].get<std::string>();
-      if (on_connect_)
-        on_connect_(this);
+      if (on_connect_) on_connect_(this);
       return;
     }
 
@@ -245,8 +247,7 @@ void CachearooConnection::ProcessStringMessage(const std::string& message) {
 
     // Handle pong
     if (json_msg.contains("pong")) {
-      if (on_pong_)
-        on_pong_();
+      if (on_pong_) on_pong_();
       return;
     }
 
@@ -274,10 +275,10 @@ void CachearooConnection::ProcessStringMessage(const std::string& message) {
   }
 }
 
-void CachearooConnection::ProcessBinaryMessage(const std::vector<uint8_t>& data) {
+void CachearooConnection::ProcessBinaryMessage(
+    const std::vector<uint8_t>& data) {
   if (data.size() < 128) {
-    if (on_error_)
-      on_error_("Binary data without header");
+    if (on_error_) on_error_("Binary data without header");
     return;
   }
 
@@ -310,7 +311,8 @@ void CachearooConnection::HandleResponse(const nlohmann::json& response) {
   if (it != pending_requests_.end()) {
     if (response.contains("error")) {
       std::string error = response["error"].dump();
-      it->second->promise.set_exception(std::make_exception_ptr(std::runtime_error(error)));
+      it->second->promise.set_exception(
+          std::make_exception_ptr(std::runtime_error(error)));
     } else {
       std::string result;
       if (response.contains("value")) {
@@ -325,8 +327,7 @@ void CachearooConnection::HandleResponse(const nlohmann::json& response) {
 }
 
 void CachearooConnection::RegisterEvents() {
-  if (!connected_.load())
-    return;
+  if (!connected_.load()) return;
 
   // Note: Caller must hold events_mutex_
 
@@ -366,7 +367,8 @@ void CachearooConnection::RegisterEvents() {
   }
 
   if (ws_client_) {
-    ws_client_->send(connection_hdl_, register_msg.dump(), websocketpp::frame::opcode::text);
+    ws_client_->send(connection_hdl_, register_msg.dump(),
+                     websocketpp::frame::opcode::text);
   }
 }
 
@@ -378,9 +380,9 @@ void CachearooConnection::CheckRequestTimeouts() {
     std::lock_guard<std::mutex> lock(requests_mutex_);
 
     for (auto it = pending_requests_.begin(); it != pending_requests_.end();) {
-      auto elapsed =
-          std::chrono::duration_cast<std::chrono::milliseconds>(now - it->second->timestamp)
-              .count();
+      auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(
+                         now - it->second->timestamp)
+                         .count();
 
       if (elapsed > kRequestTimeout) {
         it->second->promise.set_exception(
@@ -393,17 +395,18 @@ void CachearooConnection::CheckRequestTimeouts() {
   }
 }
 
-void CachearooConnection::AddListener(const std::string& bucket, const std::string& key,
-                                      bool send_values, EventCallback callback) {
-  if (send_values)
-    send_values_ = true;
+void CachearooConnection::AddListener(const std::string& bucket,
+                                      const std::string& key, bool send_values,
+                                      EventCallback callback) {
+  if (send_values) send_values_ = true;
 
   std::lock_guard<std::mutex> lock(events_mutex_);
   event_registrations_.push_back({bucket, key, std::move(callback)});
   RegisterEvents();
 }
 
-void CachearooConnection::AddBinaryListener(const std::string& bucket, const std::string& key,
+void CachearooConnection::AddBinaryListener(const std::string& bucket,
+                                            const std::string& key,
                                             BinaryEventCallback callback) {
   std::lock_guard<std::mutex> lock(events_mutex_);
   binary_event_registrations_.push_back({bucket, key, std::move(callback)});
@@ -414,11 +417,13 @@ void CachearooConnection::RemoveListener(EventCallback /* callback */) {
   // Note: This is a simplified implementation. In a real implementation,
   // you might want to store callbacks with unique identifiers.
   std::lock_guard<std::mutex> lock(events_mutex_);
-  // For now, we'll leave this as a placeholder since function comparison is complex
+  // For now, we'll leave this as a placeholder since function comparison is
+  // complex
   RegisterEvents();
 }
 
-void CachearooConnection::RemoveBinaryListener(BinaryEventCallback /* callback */) {
+void CachearooConnection::RemoveBinaryListener(
+    BinaryEventCallback /* callback */) {
   // Note: Similar to RemoveListener, this is simplified
   std::lock_guard<std::mutex> lock(events_mutex_);
   RegisterEvents();
@@ -431,7 +436,8 @@ void CachearooConnection::RemoveAllListeners() {
   RegisterEvents();
 }
 
-std::string CachearooConnection::Read(const std::string& bucket, const std::string& key) {
+std::string CachearooConnection::Read(const std::string& bucket,
+                                      const std::string& key) {
   nlohmann::json request;
   request["op"] = "read";
   request["bucket"] = bucket;
@@ -443,8 +449,8 @@ std::string CachearooConnection::Read(const std::string& bucket, const std::stri
   return future.get();
 }
 
-std::vector<ListReplyItem> CachearooConnection::List(const std::string& bucket, bool keys_only,
-                                                     const std::string& filter) {
+std::vector<ListReplyItem> CachearooConnection::List(
+    const std::string& bucket, bool keys_only, const std::string& filter) {
   nlohmann::json request;
   request["op"] = "filter";
   request["bucket"] = bucket;
@@ -478,8 +484,10 @@ std::vector<ListReplyItem> CachearooConnection::List(const std::string& bucket, 
   return items;
 }
 
-std::string CachearooConnection::Write(const std::string& bucket, const std::string& key,
-                                       const std::string& value, bool fail_if_exists,
+std::string CachearooConnection::Write(const std::string& bucket,
+                                       const std::string& key,
+                                       const std::string& value,
+                                       bool fail_if_exists,
                                        const std::string& expire) {
   nlohmann::json request;
   request["op"] = "write";
@@ -499,8 +507,10 @@ std::string CachearooConnection::Write(const std::string& bucket, const std::str
   return future.get();
 }
 
-std::string CachearooConnection::Patch(const std::string& bucket, const std::string& key,
-                                       const std::string& patch, bool remove_data_from_reply) {
+std::string CachearooConnection::Patch(const std::string& bucket,
+                                       const std::string& key,
+                                       const std::string& patch,
+                                       bool remove_data_from_reply) {
   nlohmann::json request;
   request["op"] = "patch";
   request["bucket"] = bucket;
@@ -516,7 +526,8 @@ std::string CachearooConnection::Patch(const std::string& bucket, const std::str
   return future.get();
 }
 
-void CachearooConnection::Delete(const std::string& bucket, const std::string& key) {
+void CachearooConnection::Delete(const std::string& bucket,
+                                 const std::string& key) {
   nlohmann::json request;
   request["op"] = "remove";
   request["bucket"] = bucket;
@@ -528,7 +539,8 @@ void CachearooConnection::Delete(const std::string& bucket, const std::string& k
   future.get();  // Wait for completion
 }
 
-void CachearooConnection::SignalEvent(const std::string& bucket, const std::string& key,
+void CachearooConnection::SignalEvent(const std::string& bucket,
+                                      const std::string& key,
                                       const std::string& value) {
   if (!connected_.load()) {
     throw std::runtime_error("Cannot signal event when disconnected");
@@ -547,7 +559,8 @@ void CachearooConnection::SignalEvent(const std::string& bucket, const std::stri
   message["event"] = event_obj;
 
   if (ws_client_) {
-    ws_client_->send(connection_hdl_, message.dump(), websocketpp::frame::opcode::text);
+    ws_client_->send(connection_hdl_, message.dump(),
+                     websocketpp::frame::opcode::text);
   }
 }
 
@@ -572,7 +585,8 @@ void CachearooConnection::SignalBinaryEvent(int type, const std::string& bucket,
   std::string binary_str(full_data.begin(), full_data.end());
 
   if (ws_client_) {
-    ws_client_->send(connection_hdl_, binary_str, websocketpp::frame::opcode::binary);
+    ws_client_->send(connection_hdl_, binary_str,
+                     websocketpp::frame::opcode::binary);
   }
 }
 
@@ -604,7 +618,8 @@ void CachearooConnection::AddRequest(const nlohmann::json& request,
     if (connected_.load() && ws_client_) {
       try {
         auto con = ws_client_->get_con_from_hdl(connection_hdl_);
-        std::error_code ec = con->send(message.dump(), websocketpp::frame::opcode::text);
+        std::error_code ec =
+            con->send(message.dump(), websocketpp::frame::opcode::text);
         if (ec) {
           throw std::runtime_error(ec.message());
         }
@@ -614,8 +629,9 @@ void CachearooConnection::AddRequest(const nlohmann::json& request,
         std::lock_guard<std::mutex> lock2(requests_mutex_);
         auto it = pending_requests_.find(id);
         if (it != pending_requests_.end()) {
-          it->second->promise.set_exception(std::make_exception_ptr(
-              std::runtime_error(std::string("WebSocket send failed: ") + e.what())));
+          it->second->promise.set_exception(
+              std::make_exception_ptr(std::runtime_error(
+                  std::string("WebSocket send failed: ") + e.what())));
         }
       }
     } else {
@@ -624,7 +640,8 @@ void CachearooConnection::AddRequest(const nlohmann::json& request,
   }
 }
 
-std::vector<uint8_t> CachearooConnection::HeaderToBuffer(const BinaryHeader& header) {
+std::vector<uint8_t> CachearooConnection::HeaderToBuffer(
+    const BinaryHeader& header) {
   std::vector<uint8_t> buffer(128, 0);
 
   buffer[0] = header.type;
@@ -642,7 +659,8 @@ std::vector<uint8_t> CachearooConnection::HeaderToBuffer(const BinaryHeader& hea
   return buffer;
 }
 
-BinaryHeader CachearooConnection::BufferToHeader(const std::vector<uint8_t>& buffer) {
+BinaryHeader CachearooConnection::BufferToHeader(
+    const std::vector<uint8_t>& buffer) {
   if (buffer.size() < 128) {
     throw std::runtime_error("Invalid binary header size");
   }
@@ -654,11 +672,14 @@ BinaryHeader CachearooConnection::BufferToHeader(const std::vector<uint8_t>& buf
   uint8_t api_key_size = buffer[3];
 
   size_t offset = 4;
-  header.bucket = std::string(reinterpret_cast<const char*>(buffer.data() + offset), bucket_size);
+  header.bucket = std::string(
+      reinterpret_cast<const char*>(buffer.data() + offset), bucket_size);
   offset += bucket_size;
-  header.key = std::string(reinterpret_cast<const char*>(buffer.data() + offset), key_size);
+  header.key = std::string(
+      reinterpret_cast<const char*>(buffer.data() + offset), key_size);
   offset += key_size;
-  header.api_key = std::string(reinterpret_cast<const char*>(buffer.data() + offset), api_key_size);
+  header.api_key = std::string(
+      reinterpret_cast<const char*>(buffer.data() + offset), api_key_size);
 
   return header;
 }
