@@ -70,7 +70,7 @@ struct RequestOptions {
   std::optional<std::string> expire;
   bool async = true;
   bool force_http = false;
-  std::optional<bool> keys_only = false;
+  std::optional<bool> keys_only;
   std::optional<std::string> filter;
   bool remove_data_from_reply = false;
 };

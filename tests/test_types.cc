@@ -48,7 +48,7 @@ TEST(RequestOptionsTest, DefaultValues) {
   EXPECT_FALSE(options.fail_if_exists);
   EXPECT_FALSE(options.expire.has_value());
   EXPECT_TRUE(options.async);
-  EXPECT_FALSE(options.keys_only);
+  EXPECT_FALSE(options.keys_only.has_value());
   EXPECT_FALSE(options.filter.has_value());
   EXPECT_FALSE(options.remove_data_from_reply);
 }
