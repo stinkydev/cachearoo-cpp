@@ -12,11 +12,8 @@ using namespace cachearoo;
 class ImageProcessor : public Worker {
  public:
   explicit ImageProcessor(const std::string& id) : Worker(id) {
-    SetWorkHandler([this](const std::string& job,
-                          MessageResponseCallback callback,
-                          ProgressCallback progress) {
-      ProcessImage(job, callback, progress);
-    });
+    SetWorkHandler([this](const std::string& job, MessageResponseCallback callback,
+                          ProgressCallback progress) { ProcessImage(job, callback, progress); });
   }
 
  private:
@@ -72,39 +69,38 @@ void RunConsumer() {
   // Create some workers
   std::vector<std::shared_ptr<ImageProcessor>> workers;
   for (int i = 1; i <= 3; ++i) {
-    workers.push_back(
-        std::make_shared<ImageProcessor>("worker-" + std::to_string(i)));
+    workers.push_back(std::make_shared<ImageProcessor>("worker-" + std::to_string(i)));
   }
 
   // Set up job query handler
-  consumer.SetJobQueryHandler([&workers](const std::string& job,
-                                         JobQueryResponseCallback response) {
-    try {
-      auto job_json = nlohmann::json::parse(job);
-      std::string filter = job_json["filter"];
+  consumer.SetJobQueryHandler(
+      [&workers](const std::string& job, JobQueryResponseCallback response) {
+        try {
+          auto job_json = nlohmann::json::parse(job);
+          std::string filter = job_json["filter"];
 
-      // Check if we support this filter type
-      if (filter != "blur" && filter != "sharpen" && filter != "grayscale") {
-        response(kJobNotSupported, nullptr);
-        return;
-      }
+          // Check if we support this filter type
+          if (filter != "blur" && filter != "sharpen" && filter != "grayscale") {
+            response(kJobNotSupported, nullptr);
+            return;
+          }
 
-      // Find an available worker
-      for (auto& worker : workers) {
-        if (worker->IsAvailable()) {
-          worker->SetAvailable(false);
-          response(0, worker);
-          return;
+          // Find an available worker
+          for (auto& worker : workers) {
+            if (worker->IsAvailable()) {
+              worker->SetAvailable(false);
+              response(0, worker);
+              return;
+            }
+          }
+
+          // No workers available
+          response(kNoWorkerAvailable, nullptr);
+
+        } catch (const std::exception&) {
+          response(-1, nullptr);
         }
-      }
-
-      // No workers available
-      response(kNoWorkerAvailable, nullptr);
-
-    } catch (const std::exception&) {
-      response(-1, nullptr);
-    }
-  });
+      });
 
   // Set up job notification handler
   consumer.OnJob = [](const nlohmann::json& job_info) {
@@ -119,8 +115,8 @@ void RunConsumer() {
     }
   };
 
-  std::cout << "Image processing consumer is running with " << workers.size()
-            << " workers." << std::endl;
+  std::cout << "Image processing consumer is running with " << workers.size() << " workers."
+            << std::endl;
   std::cout << "Current job count: " << consumer.GetJobCount() << std::endl;
   std::cout << "Press Enter to stop..." << std::endl;
   std::cin.get();
@@ -148,8 +144,7 @@ void RunProducer() {
   Producer producer(&client, "image-processing");
 
   // Submit some image processing jobs
-  std::vector<std::string> images = {"photo1.jpg", "photo2.jpg", "photo3.jpg",
-                                     "photo4.jpg"};
+  std::vector<std::string> images = {"photo1.jpg", "photo2.jpg", "photo3.jpg", "photo4.jpg"};
 
   std::vector<std::string> filters = {
       "blur", "sharpen", "grayscale",
@@ -163,21 +158,19 @@ void RunProducer() {
       job["filter"] = filters[i];
       job["id"] = "job-" + std::to_string(i + 1);
 
-      std::cout << "Submitting job: " << job["id"] << " (" << images[i]
-                << " with " << filters[i] << ")" << std::endl;
+      std::cout << "Submitting job: " << job["id"] << " (" << images[i] << " with " << filters[i]
+                << ")" << std::endl;
 
       // Submit job asynchronously with progress tracking
-      auto future =
-          producer.AddJobAsync(job.dump(), [](const std::string& progress) {
-            std::cout << "Progress update: " << progress << std::endl;
-          });
+      auto future = producer.AddJobAsync(job.dump(), [](const std::string& progress) {
+        std::cout << "Progress update: " << progress << std::endl;
+      });
 
       // You could wait for completion or continue submitting
       std::thread([future = std::move(future), job_id = job["id"]]() mutable {
         try {
           std::string result = future.get();
-          std::cout << "Job " << job_id << " completed: " << result
-                    << std::endl;
+          std::cout << "Job " << job_id << " completed: " << result << std::endl;
         } catch (const std::exception& e) {
           std::cout << "Job " << job_id << " failed: " << e.what() << std::endl;
         }

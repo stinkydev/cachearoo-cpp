@@ -32,8 +32,7 @@ void RunReplier() {
 
     Replier replier(&client, "calculator");
 
-    replier.SetMessageHandler([](const std::string& message,
-                                 MessageResponseCallback response,
+    replier.SetMessageHandler([](const std::string& message, MessageResponseCallback response,
                                  ProgressCallback progress) {
       try {
         auto json_msg = nlohmann::json::parse(message);
@@ -42,8 +41,8 @@ void RunReplier() {
         double b = json_msg["b"];
         std::string description = json_msg.value("description", "");
 
-        std::cout << "Received calculation request: " << a << " " << operation
-                  << " " << b << std::endl;
+        std::cout << "Received calculation request: " << a << " " << operation << " " << b
+                  << std::endl;
         if (!description.empty()) {
           std::cout << "Description: " << description << std::endl;
         }
@@ -82,8 +81,7 @@ void RunReplier() {
       }
     });
 
-    std::cout << "Calculator service is running. Press Enter to stop..."
-              << std::endl;
+    std::cout << "Calculator service is running. Press Enter to stop..." << std::endl;
     std::cin.get();
 
     std::cout << "Shutting down server..." << std::endl;
@@ -132,10 +130,9 @@ void RunRequestor() {
       request["b"] = 5;
 
       std::cout << "Requesting: 10 + 5" << std::endl;
-      std::string result =
-          requestor.Request(request.dump(), [](const std::string& progress) {
-            std::cout << "Progress: " << progress << std::endl;
-          });
+      std::string result = requestor.Request(request.dump(), [](const std::string& progress) {
+        std::cout << "Progress: " << progress << std::endl;
+      });
 
       auto result_json = nlohmann::json::parse(result);
       std::cout << "Result: " << result_json["result"] << std::endl;
@@ -156,8 +153,7 @@ void RunRequestor() {
       request["b"] = 4;
       request["description"] = "Math with emoji: 🧮";
 
-      std::cout << "\nRequesting: 100 / 4 with Unicode description"
-                << std::endl;
+      std::cout << "\nRequesting: 100 / 4 with Unicode description" << std::endl;
       result = requestor.Request(request.dump());
       result_json = nlohmann::json::parse(result);
       std::cout << "Result: " << result_json["result"] << std::endl;

@@ -10,8 +10,7 @@ namespace cachearoo {
 
 class CachearooClient {
  public:
-  explicit CachearooClient(
-      const CachearooSettings& settings = CachearooSettings{});
+  explicit CachearooClient(const CachearooSettings& settings = CachearooSettings{});
   ~CachearooClient();
 
   // Data operations
@@ -35,11 +34,11 @@ class CachearooClient {
 
  private:
   // Helper methods
-  RequestOptionsInternal InternalizeRequestOptions(
-      const std::string& key, const RequestOptions& options);
+  RequestOptionsInternal InternalizeRequestOptions(const std::string& key,
+                                                   const RequestOptions& options);
   RequestOptions CheckOptions(const RequestOptions& options);
-  std::string GetUrl(const std::string& key, const std::string& bucket,
-                     bool keys_only, const std::string& filter);
+  std::string GetUrl(const std::string& key, const std::string& bucket, bool keys_only,
+                     const std::string& filter);
 
   // Settings and connection
   CachearooSettings settings_;

@@ -169,7 +169,7 @@ endif()
 
 # Add clang-format target
 find_program(CLANG_FORMAT_EXECUTABLE
-    NAMES clang-format clang-format-18 clang-format-17 clang-format-16 clang-format-15
+    NAMES clang-format clang-format-18 clang-format-17 clang-format-16 clang-format-15 clang-format-14
     DOC "Path to clang-format executable"
 )
 
@@ -188,17 +188,17 @@ if(CLANG_FORMAT_EXECUTABLE)
 
     # Add format target
     add_custom_target(format
-        COMMAND ${CLANG_FORMAT_EXECUTABLE} -i -style=Google ${ALL_SOURCE_FILES}
+        COMMAND ${CLANG_FORMAT_EXECUTABLE} -i ${ALL_SOURCE_FILES}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Formatting source code with clang-format (Google style)"
+        COMMENT "Formatting source code with clang-format"
         VERBATIM
     )
 
     # Add format-check target
     add_custom_target(format-check
-        COMMAND ${CLANG_FORMAT_EXECUTABLE} --dry-run --Werror -style=Google ${ALL_SOURCE_FILES}
+        COMMAND ${CLANG_FORMAT_EXECUTABLE} --dry-run --Werror ${ALL_SOURCE_FILES}
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-        COMMENT "Checking source code format with clang-format (Google style)"
+        COMMENT "Checking source code format with clang-format"
         VERBATIM
     )
 
