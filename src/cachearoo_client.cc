@@ -30,11 +30,8 @@ CachearooClient::CachearooClient(const CachearooSettings& settings) : settings_(
     settings_.path = "/";
   }
 
-  // Create connection
+  // Create connection - it handles all async WebSocket communication internally
   connection_ = std::make_unique<CachearooConnection>(settings_);
-
-  // Start request queue processing thread
-  queue_thread_ = std::thread([this]() { ProcessRequestQueue(); });
 }
 
 CachearooClient::~CachearooClient() {
@@ -42,13 +39,6 @@ CachearooClient::~CachearooClient() {
 }
 
 void CachearooClient::Close() {
-  shutdown_.store(true);
-  queue_cv_.notify_all();
-
-  if (queue_thread_.joinable()) {
-    queue_thread_.join();
-  }
-
   if (connection_) {
     connection_->Close();
   }
@@ -60,8 +50,9 @@ bool CachearooClient::IsConnected() const {
 
 std::string CachearooClient::Read(const std::string& key, const RequestOptions& options) {
   auto opt = InternalizeRequestOptions(key, CheckOptions(options));
-  opt.method = "GET";
-  return Request(opt).get();
+  
+  // Call connection directly - it handles async WebSocket communication internally
+  return connection_->Read(opt.bucket.value_or(settings_.bucket), opt.key);
 }
 
 std::vector<ListReplyItem> CachearooClient::List(const RequestOptions& options) {
@@ -71,49 +62,41 @@ std::vector<ListReplyItem> CachearooClient::List(const RequestOptions& options) 
   }
 
   auto opt = InternalizeRequestOptions("", CheckOptions(opts_with_keys_only));
-  opt.method = "GET";
-
-  std::string result = Request(opt).get();
-  auto json_result = nlohmann::json::parse(result);
-
-  std::vector<ListReplyItem> items;
-  for (const auto& item : json_result) {
-    ListReplyItem list_item;
-    list_item.key = item.value("key", "");
-    list_item.timestamp = item.value("timestamp", "");
-    list_item.size = item.value("size", 0);
-    if ((item.contains("expire")) && (!item["expire"].is_null())) {
-      list_item.expire = item["expire"].get<std::string>();
-    }
-    if ((item.contains("content")) && (!item["content"].is_null())) {
-      list_item.content = item["content"].dump();
-    }
-    items.push_back(list_item);
-  }
-
-  return items;
+  
+  // Call connection directly - it handles async WebSocket communication internally
+  return connection_->List(opt.bucket.value_or(settings_.bucket), 
+                          opt.keys_only.value_or(true), 
+                          opt.filter.value_or(""));
 }
 
 std::string CachearooClient::Write(const std::string& key, const std::string& value,
                                    const RequestOptions& options) {
   auto opt = InternalizeRequestOptions(key, CheckOptions(options));
-  opt.method = opt.key.empty() ? "POST" : "PUT";
-  opt.data = value;
-  return Request(opt).get();
+  
+  // Call connection directly - it handles async WebSocket communication internally
+  return connection_->Write(opt.bucket.value_or(settings_.bucket), 
+                           opt.key, 
+                           value, 
+                           opt.fail_if_exists, 
+                           opt.expire.value_or(""));
 }
 
 std::string CachearooClient::Patch(const std::string& key, const std::string& patch,
                                    const RequestOptions& options) {
   auto opt = InternalizeRequestOptions(key, CheckOptions(options));
-  opt.method = "PATCH";
-  opt.data = patch;
-  return Request(opt).get();
+  
+  // Call connection directly - it handles async WebSocket communication internally
+  return connection_->Patch(opt.bucket.value_or(settings_.bucket), 
+                           opt.key, 
+                           patch, 
+                           opt.remove_data_from_reply);
 }
 
 void CachearooClient::Remove(const std::string& key, const RequestOptions& options) {
   auto opt = InternalizeRequestOptions(key, CheckOptions(options));
-  opt.method = "DELETE";
-  Request(opt).get();  // Wait for completion
+  
+  // Call connection directly - it handles async WebSocket communication internally
+  connection_->Delete(opt.bucket.value_or(settings_.bucket), opt.key);
 }
 
 RequestOptionsInternal CachearooClient::InternalizeRequestOptions(const std::string& key,
@@ -160,100 +143,6 @@ std::string CachearooClient::GetUrl(const std::string& key, const std::string& b
                     settings_.path + "_data/" + bucket + "/" + safe_key + suffix;
 
   return url;
-}
-
-std::future<std::string> CachearooClient::Request(const RequestOptionsInternal& options) {
-  std::promise<std::string> promise;
-  auto future = promise.get_future();
-
-  auto queue_item = std::make_unique<RequestQueueItem>();
-  queue_item->promise = std::move(promise);
-  queue_item->options = options;
-
-  {
-    std::lock_guard<std::mutex> lock(queue_mutex_);
-    request_queue_.push(std::move(queue_item));
-  }
-  queue_cv_.notify_one();
-
-  return future;
-}
-
-void CachearooClient::ProcessRequestQueue() {
-  while (!shutdown_.load()) {
-    std::unique_lock<std::mutex> lock(queue_mutex_);
-    queue_cv_.wait(lock, [this] { return !request_queue_.empty() || shutdown_.load(); });
-
-    if (shutdown_.load())
-      break;
-
-    // Check if we've hit the max concurrent limit
-    if (pending_requests_.load() >= kMaxConcurrent) {
-      continue;
-    }
-
-    if (request_queue_.empty())
-      continue;
-
-    auto item = std::move(request_queue_.front());
-    request_queue_.pop();
-    lock.unlock();
-
-    pending_requests_++;
-
-    std::thread([this, item = std::move(item)]() mutable {
-      try {
-        std::string result;
-        // Always use WebSocket connection for all operations
-        if (item->options.method == "GET") {
-          if (item->options.key.empty()) {
-            // List operation
-            auto list_result =
-                connection_->List(item->options.bucket.value_or(settings_.bucket),
-                                  item->options.keys_only.value_or(true), item->options.filter.value_or(""));
-            nlohmann::json json_array = nlohmann::json::array();
-            for (const auto& list_item : list_result) {
-              nlohmann::json item_json;
-              item_json["key"] = list_item.key;
-              item_json["timestamp"] = list_item.timestamp;
-              item_json["size"] = list_item.size;
-              if (list_item.expire) {
-                item_json["expire"] = *list_item.expire;
-              }
-              if (list_item.content) {
-                item_json["content"] = nlohmann::json::parse(*list_item.content);
-              }
-              json_array.push_back(item_json);
-            }
-            result = json_array.dump();
-          } else {
-            // Read operation
-            result = connection_->Read(item->options.bucket.value_or(settings_.bucket),
-                                       item->options.key);
-          }
-        } else if (item->options.method == "POST" || item->options.method == "PUT") {
-          // Write operation
-          result =
-              connection_->Write(item->options.bucket.value_or(settings_.bucket), item->options.key,
-                                 item->options.data.value_or("{}"), item->options.fail_if_exists,
-                                 item->options.expire.value_or(""));
-        } else if (item->options.method == "PATCH") {
-          // Patch operation
-          result = connection_->Patch(item->options.bucket.value_or(settings_.bucket),
-                                      item->options.key, item->options.data.value_or("{}"),
-                                      item->options.remove_data_from_reply);
-        } else if (item->options.method == "DELETE") {
-          // Delete operation
-          connection_->Delete(item->options.bucket.value_or(settings_.bucket), item->options.key);
-          result = "";  // Delete returns void
-        }
-        item->promise.set_value(result);
-      } catch (const std::exception&) {
-        item->promise.set_exception(std::current_exception());
-      }
-      pending_requests_--;
-    }).detach();
-  }
 }
 
 }  // namespace cachearoo
