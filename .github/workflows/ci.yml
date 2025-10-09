@@ -93,13 +93,12 @@ jobs:
     steps:
     - uses: actions/checkout@v3
     
-    - name: Install clang-format
-      run: sudo apt-get install -y clang-format-14
-    
     - name: Check code formatting
-      run: |
-        find include src examples tests -name '*.cc' -o -name '*.h' | \
-          xargs clang-format-14 --dry-run --Werror
+      uses: jidicula/clang-format-action@v4.11.0
+      with:
+        clang-format-version: '14'
+        check-path: '.'
+        include-regex: '^.*\.(cc|h)$'
 
   build-examples:
     runs-on: ubuntu-latest
