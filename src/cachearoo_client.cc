@@ -34,78 +34,78 @@ CachearooClient::CachearooClient(const CachearooSettings& settings) : settings_(
 }
 
 CachearooClient::~CachearooClient() {
-  Close();
+  close();
 }
 
-void CachearooClient::Close() {
+void CachearooClient::close() {
   if (connection_) {
-    connection_->Close();
+    connection_->close();
   }
 }
 
-bool CachearooClient::IsConnected() const {
-  return connection_ && connection_->IsConnected();
+bool CachearooClient::is_connected() const {
+  return connection_ && connection_->is_connected();
 }
 
-std::string CachearooClient::Read(const std::string& key, const RequestOptions& options) {
-  auto opt = InternalizeRequestOptions(key, CheckOptions(options));
+std::string CachearooClient::read(const std::string& key, const RequestOptions& options) {
+  auto opt = internalize_request_options(key, check_options(options));
 
   // Call connection directly - it handles async WebSocket communication
   // internally
-  return connection_->Read(opt.bucket.value_or(settings_.bucket), opt.key);
+  return connection_->read(opt.bucket.value_or(settings_.bucket), opt.key);
 }
 
-std::vector<ListReplyItem> CachearooClient::List(const RequestOptions& options) {
+std::vector<ListReplyItem> CachearooClient::list(const RequestOptions& options) {
   auto opts_with_keys_only = options;
   if (!opts_with_keys_only.keys_only) {
     opts_with_keys_only.keys_only = true;
   }
 
-  auto opt = InternalizeRequestOptions("", CheckOptions(opts_with_keys_only));
+  auto opt = internalize_request_options("", check_options(opts_with_keys_only));
 
   // Call connection directly - it handles async WebSocket communication
   // internally
-  return connection_->List(opt.bucket.value_or(settings_.bucket), opt.keys_only.value_or(true),
+  return connection_->list(opt.bucket.value_or(settings_.bucket), opt.keys_only.value_or(true),
                            opt.filter.value_or(""));
 }
 
-std::string CachearooClient::Write(const std::string& key, const std::string& value,
+std::string CachearooClient::write(const std::string& key, const std::string& value,
                                    const RequestOptions& options) {
-  auto opt = InternalizeRequestOptions(key, CheckOptions(options));
+  auto opt = internalize_request_options(key, check_options(options));
 
   // Call connection directly - it handles async WebSocket communication
   // internally
-  return connection_->Write(opt.bucket.value_or(settings_.bucket), opt.key, value,
+  return connection_->write(opt.bucket.value_or(settings_.bucket), opt.key, value,
                             opt.fail_if_exists, opt.expire.value_or(""));
 }
 
-std::string CachearooClient::Patch(const std::string& key, const std::string& patch,
+std::string CachearooClient::patch(const std::string& key, const std::string& patch,
                                    const RequestOptions& options) {
-  auto opt = InternalizeRequestOptions(key, CheckOptions(options));
+  auto opt = internalize_request_options(key, check_options(options));
 
   // Call connection directly - it handles async WebSocket communication
   // internally
-  return connection_->Patch(opt.bucket.value_or(settings_.bucket), opt.key, patch,
+  return connection_->patch(opt.bucket.value_or(settings_.bucket), opt.key, patch,
                             opt.remove_data_from_reply);
 }
 
-void CachearooClient::Remove(const std::string& key, const RequestOptions& options) {
-  auto opt = InternalizeRequestOptions(key, CheckOptions(options));
+void CachearooClient::remove(const std::string& key, const RequestOptions& options) {
+  auto opt = internalize_request_options(key, check_options(options));
 
   // Call connection directly - it handles async WebSocket communication
   // internally
-  connection_->Delete(opt.bucket.value_or(settings_.bucket), opt.key);
+  connection_->delete_key(opt.bucket.value_or(settings_.bucket), opt.key);
 }
 
-RequestOptionsInternal CachearooClient::InternalizeRequestOptions(const std::string& key,
-                                                                  const RequestOptions& options) {
+RequestOptionsInternal CachearooClient::internalize_request_options(const std::string& key,
+                                                                    const RequestOptions& options) {
   std::string bucket = options.bucket.value_or(settings_.bucket);
   bool async = options.async;
 
   RequestOptionsInternal opt;
   static_cast<RequestOptions&>(opt) = options;
 
-  opt.url = GetUrl(key, bucket, options.keys_only.value_or(true), options.filter.value_or(""));
+  opt.url = get_url(key, bucket, options.keys_only.value_or(true), options.filter.value_or(""));
   opt.bucket = bucket;
   opt.key = key;
   opt.async = async;
@@ -113,12 +113,12 @@ RequestOptionsInternal CachearooClient::InternalizeRequestOptions(const std::str
   return opt;
 }
 
-RequestOptions CachearooClient::CheckOptions(const RequestOptions& options) {
+RequestOptions CachearooClient::check_options(const RequestOptions& options) {
   return options;  // Already a value type, no need to convert
 }
 
-std::string CachearooClient::GetUrl(const std::string& key, const std::string& bucket,
-                                    bool keys_only, const std::string& filter) {
+std::string CachearooClient::get_url(const std::string& key, const std::string& bucket,
+                                     bool keys_only, const std::string& filter) {
   std::string safe_key = key.empty() ? "" : key;
 
   // Add timestamp to prevent caching

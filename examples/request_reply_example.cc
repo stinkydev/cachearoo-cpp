@@ -18,12 +18,12 @@ void RunReplier() {
 
     // Wait for connection
     int attempts = 0;
-    while (!client.IsConnected() && attempts < 100) {
+    while (!client.is_connected() && attempts < 100) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       attempts++;
     }
 
-    if (!client.IsConnected()) {
+    if (!client.is_connected()) {
       std::cerr << "Failed to connect to server" << std::endl;
       return;
     }
@@ -32,8 +32,8 @@ void RunReplier() {
 
     Replier replier(&client, "calculator");
 
-    replier.SetMessageHandler([](const std::string& message, MessageResponseCallback response,
-                                 ProgressCallback progress) {
+    replier.set_message_handler([](const std::string& message, MessageResponseCallback response,
+                                   ProgressCallback progress) {
       try {
         auto json_msg = nlohmann::json::parse(message);
         std::string operation = json_msg["operation"];
@@ -87,7 +87,7 @@ void RunReplier() {
     std::cout << "Shutting down server..." << std::endl;
     // Give time for any pending operations and close properly
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    client.Close();
+    client.close();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::cout << "Server shutdown complete." << std::endl;
 
@@ -107,12 +107,12 @@ void RunRequestor() {
 
     // Wait for connection
     int attempts = 0;
-    while (!client.IsConnected() && attempts < 100) {
+    while (!client.is_connected() && attempts < 100) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       attempts++;
     }
 
-    if (!client.IsConnected()) {
+    if (!client.is_connected()) {
       std::cerr << "Failed to connect to server" << std::endl;
       return;
     }
@@ -130,7 +130,7 @@ void RunRequestor() {
       request["b"] = 5;
 
       std::cout << "Requesting: 10 + 5" << std::endl;
-      std::string result = requestor.Request(request.dump(), [](const std::string& progress) {
+      std::string result = requestor.request(request.dump(), [](const std::string& progress) {
         std::cout << "Progress: " << progress << std::endl;
       });
 
@@ -143,7 +143,7 @@ void RunRequestor() {
       request["b"] = 8;
 
       std::cout << "\nRequesting: 7 * 8" << std::endl;
-      result = requestor.Request(request.dump());
+      result = requestor.request(request.dump());
       result_json = nlohmann::json::parse(result);
       std::cout << "Result: " << result_json["result"] << std::endl;
 
@@ -154,7 +154,7 @@ void RunRequestor() {
       request["description"] = "Math with emoji: 🧮";
 
       std::cout << "\nRequesting: 100 / 4 with Unicode description" << std::endl;
-      result = requestor.Request(request.dump());
+      result = requestor.request(request.dump());
       result_json = nlohmann::json::parse(result);
       std::cout << "Result: " << result_json["result"] << std::endl;
       if (result_json.contains("echo")) {
@@ -169,7 +169,7 @@ void RunRequestor() {
     std::cout << "Shutting down client..." << std::endl;
     // Give time for any pending operations and close properly
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    client.Close();
+    client.close();
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
     std::cout << "Client shutdown complete." << std::endl;
 

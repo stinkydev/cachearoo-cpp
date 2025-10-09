@@ -89,10 +89,10 @@ CachearooConnection::CachearooConnection(const CachearooSettings& settings) : se
 }
 
 CachearooConnection::~CachearooConnection() {
-  Close();
+  close();
 }
 
-void CachearooConnection::Close() {
+void CachearooConnection::close() {
   skip_reconnect_.store(true);
   connected_.store(false);
 
@@ -408,8 +408,8 @@ void CachearooConnection::CheckRequestTimeouts() {
   }
 }
 
-int CachearooConnection::AddListener(const std::string& bucket, const std::string& key,
-                                     bool send_values, EventCallback callback) {
+int CachearooConnection::add_listener(const std::string& bucket, const std::string& key,
+                                      bool send_values, EventCallback callback) {
   if (send_values)
     send_values_ = true;
 
@@ -420,8 +420,8 @@ int CachearooConnection::AddListener(const std::string& bucket, const std::strin
   return id;
 }
 
-int CachearooConnection::AddBinaryListener(const std::string& bucket, const std::string& key,
-                                           BinaryEventCallback callback) {
+int CachearooConnection::add_binary_listener(const std::string& bucket, const std::string& key,
+                                             BinaryEventCallback callback) {
   std::lock_guard<std::mutex> lock(events_mutex_);
   int id = ++listener_id_counter_;
   binary_event_registrations_.push_back({id, bucket, key, std::move(callback)});
@@ -429,7 +429,7 @@ int CachearooConnection::AddBinaryListener(const std::string& bucket, const std:
   return id;
 }
 
-void CachearooConnection::RemoveListener(int listener_id) {
+void CachearooConnection::remove_listener(int listener_id) {
   std::lock_guard<std::mutex> lock(events_mutex_);
   event_registrations_.erase(
       std::remove_if(event_registrations_.begin(), event_registrations_.end(),
@@ -438,7 +438,7 @@ void CachearooConnection::RemoveListener(int listener_id) {
   RegisterEvents();
 }
 
-void CachearooConnection::RemoveBinaryListener(int listener_id) {
+void CachearooConnection::remove_binary_listener(int listener_id) {
   std::lock_guard<std::mutex> lock(events_mutex_);
   binary_event_registrations_.erase(
       std::remove_if(
@@ -448,14 +448,14 @@ void CachearooConnection::RemoveBinaryListener(int listener_id) {
   RegisterEvents();
 }
 
-void CachearooConnection::RemoveAllListeners() {
+void CachearooConnection::remove_all_listeners() {
   std::lock_guard<std::mutex> lock(events_mutex_);
   event_registrations_.clear();
   binary_event_registrations_.clear();
   RegisterEvents();
 }
 
-std::string CachearooConnection::Read(const std::string& bucket, const std::string& key) {
+std::string CachearooConnection::read(const std::string& bucket, const std::string& key) {
   nlohmann::json request;
   request["op"] = "read";
   request["bucket"] = bucket;
@@ -467,7 +467,7 @@ std::string CachearooConnection::Read(const std::string& bucket, const std::stri
   return future.get();
 }
 
-std::vector<ListReplyItem> CachearooConnection::List(const std::string& bucket, bool keys_only,
+std::vector<ListReplyItem> CachearooConnection::list(const std::string& bucket, bool keys_only,
                                                      const std::string& filter) {
   nlohmann::json request;
   request["op"] = "filter";
@@ -502,7 +502,7 @@ std::vector<ListReplyItem> CachearooConnection::List(const std::string& bucket, 
   return items;
 }
 
-std::string CachearooConnection::Write(const std::string& bucket, const std::string& key,
+std::string CachearooConnection::write(const std::string& bucket, const std::string& key,
                                        const std::string& value, bool fail_if_exists,
                                        const std::string& expire) {
   nlohmann::json request;
@@ -523,7 +523,7 @@ std::string CachearooConnection::Write(const std::string& bucket, const std::str
   return future.get();
 }
 
-std::string CachearooConnection::Patch(const std::string& bucket, const std::string& key,
+std::string CachearooConnection::patch(const std::string& bucket, const std::string& key,
                                        const std::string& patch, bool remove_data_from_reply) {
   nlohmann::json request;
   request["op"] = "patch";
@@ -540,7 +540,7 @@ std::string CachearooConnection::Patch(const std::string& bucket, const std::str
   return future.get();
 }
 
-void CachearooConnection::Delete(const std::string& bucket, const std::string& key) {
+void CachearooConnection::delete_key(const std::string& bucket, const std::string& key) {
   nlohmann::json request;
   request["op"] = "remove";
   request["bucket"] = bucket;
@@ -552,8 +552,8 @@ void CachearooConnection::Delete(const std::string& bucket, const std::string& k
   future.get();  // Wait for completion
 }
 
-void CachearooConnection::SignalEvent(const std::string& bucket, const std::string& key,
-                                      const std::string& value) {
+void CachearooConnection::signal_event(const std::string& bucket, const std::string& key,
+                                       const std::string& value) {
   if (!connected_.load()) {
     throw std::runtime_error("Cannot signal event when disconnected");
   }
@@ -575,9 +575,9 @@ void CachearooConnection::SignalEvent(const std::string& bucket, const std::stri
   }
 }
 
-void CachearooConnection::SignalBinaryEvent(int type, const std::string& bucket,
-                                            const std::string& key,
-                                            const std::vector<uint8_t>& value) {
+void CachearooConnection::signal_binary_event(int type, const std::string& bucket,
+                                              const std::string& key,
+                                              const std::vector<uint8_t>& value) {
   if (!connected_.load()) {
     throw std::runtime_error("Cannot signal binary event when disconnected");
   }

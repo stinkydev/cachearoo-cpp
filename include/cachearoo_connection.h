@@ -43,40 +43,40 @@ class CachearooConnection {
   ~CachearooConnection();
 
   // Connection management
-  bool IsConnected() const { return connected_.load(); }
-  void Close();
-  const std::string& GetId() const { return id_; }
+  bool is_connected() const { return connected_.load(); }
+  void close();
+  const std::string& get_id() const { return id_; }
 
   // Event callbacks
-  void SetOnConnect(ConnectCallback callback) { on_connect_ = std::move(callback); }
-  void SetOnDisconnect(DisconnectCallback callback) { on_disconnect_ = std::move(callback); }
-  void SetOnError(ErrorCallback callback) { on_error_ = std::move(callback); }
-  void SetOnPong(PongCallback callback) { on_pong_ = std::move(callback); }
+  void set_on_connect(ConnectCallback callback) { on_connect_ = std::move(callback); }
+  void set_on_disconnect(DisconnectCallback callback) { on_disconnect_ = std::move(callback); }
+  void set_on_error(ErrorCallback callback) { on_error_ = std::move(callback); }
+  void set_on_pong(PongCallback callback) { on_pong_ = std::move(callback); }
 
   // Event listeners
-  int AddListener(const std::string& bucket, const std::string& key, bool send_values,
-                  EventCallback callback);
-  int AddBinaryListener(const std::string& bucket, const std::string& key,
-                        BinaryEventCallback callback);
-  void RemoveListener(int listener_id);
-  void RemoveBinaryListener(int listener_id);
-  void RemoveAllListeners();
+  int add_listener(const std::string& bucket, const std::string& key, bool send_values,
+                   EventCallback callback);
+  int add_binary_listener(const std::string& bucket, const std::string& key,
+                          BinaryEventCallback callback);
+  void remove_listener(int listener_id);
+  void remove_binary_listener(int listener_id);
+  void remove_all_listeners();
 
   // Data operations
-  std::string Read(const std::string& bucket, const std::string& key);
-  std::vector<ListReplyItem> List(const std::string& bucket, bool keys_only,
+  std::string read(const std::string& bucket, const std::string& key);
+  std::vector<ListReplyItem> list(const std::string& bucket, bool keys_only,
                                   const std::string& filter);
-  std::string Write(const std::string& bucket, const std::string& key, const std::string& value,
+  std::string write(const std::string& bucket, const std::string& key, const std::string& value,
                     bool fail_if_exists = false, const std::string& expire = "");
-  std::string Patch(const std::string& bucket, const std::string& key, const std::string& patch,
+  std::string patch(const std::string& bucket, const std::string& key, const std::string& patch,
                     bool remove_data_from_reply = false);
-  void Delete(const std::string& bucket, const std::string& key);
-  void SignalEvent(const std::string& bucket, const std::string& key, const std::string& value);
-  void SignalBinaryEvent(int type, const std::string& bucket, const std::string& key,
-                         const std::vector<uint8_t>& value);
+  void delete_key(const std::string& bucket, const std::string& key);
+  void signal_event(const std::string& bucket, const std::string& key, const std::string& value);
+  void signal_binary_event(int type, const std::string& bucket, const std::string& key,
+                           const std::vector<uint8_t>& value);
 
   // Generic request method
-  std::string Request(const RequestOptionsInternal& options);
+  std::string request(const RequestOptionsInternal& options);
 
  private:
   using WebSocketClient = websocketpp::client<websocketpp::config::asio_client>;

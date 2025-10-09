@@ -33,7 +33,7 @@ class TimeoutError : public std::exception {
       : message_(message), progress_timeout_(progress_timeout) {}
 
   const char* what() const noexcept override { return message_.c_str(); }
-  bool IsProgressTimeout() const { return progress_timeout_; }
+  bool is_progress_timeout() const { return progress_timeout_; }
 
  private:
   std::string message_;

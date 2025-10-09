@@ -14,31 +14,31 @@ class CachearooClient {
   ~CachearooClient();
 
   // Data operations
-  std::string Read(const std::string& key, const RequestOptions& options = {});
-  std::vector<ListReplyItem> List(const RequestOptions& options = {});
-  std::string Write(const std::string& key, const std::string& value,
+  std::string read(const std::string& key, const RequestOptions& options = {});
+  std::vector<ListReplyItem> list(const RequestOptions& options = {});
+  std::string write(const std::string& key, const std::string& value,
                     const RequestOptions& options = {});
-  std::string Patch(const std::string& key, const std::string& patch,
+  std::string patch(const std::string& key, const std::string& patch,
                     const RequestOptions& options = {});
-  void Remove(const std::string& key, const RequestOptions& options = {});
+  void remove(const std::string& key, const RequestOptions& options = {});
 
   // Repair operation
-  void Repair(const std::string& bucket);
+  void repair(const std::string& bucket);
 
   // Connection management
-  void Close();
-  bool IsConnected() const;
+  void close();
+  bool is_connected() const;
 
   // Access to underlying connection for messaging
-  CachearooConnection* GetConnection() { return connection_.get(); }
+  CachearooConnection* get_connection() { return connection_.get(); }
 
  private:
   // Helper methods
-  RequestOptionsInternal InternalizeRequestOptions(const std::string& key,
-                                                   const RequestOptions& options);
-  RequestOptions CheckOptions(const RequestOptions& options);
-  std::string GetUrl(const std::string& key, const std::string& bucket, bool keys_only,
-                     const std::string& filter);
+  RequestOptionsInternal internalize_request_options(const std::string& key,
+                                                     const RequestOptions& options);
+  RequestOptions check_options(const RequestOptions& options);
+  std::string get_url(const std::string& key, const std::string& bucket, bool keys_only,
+                      const std::string& filter);
 
   // Settings and connection
   CachearooSettings settings_;

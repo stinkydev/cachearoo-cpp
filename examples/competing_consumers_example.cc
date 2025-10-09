@@ -12,8 +12,8 @@ using namespace cachearoo;
 class ImageProcessor : public Worker {
  public:
   explicit ImageProcessor(const std::string& id) : Worker(id) {
-    SetWorkHandler([this](const std::string& job, MessageResponseCallback callback,
-                          ProgressCallback progress) { ProcessImage(job, callback, progress); });
+    set_work_handler([this](const std::string& job, MessageResponseCallback callback,
+                            ProgressCallback progress) { ProcessImage(job, callback, progress); });
   }
 
  private:
@@ -24,7 +24,7 @@ class ImageProcessor : public Worker {
       std::string image_path = job_json["image_path"];
       std::string filter = job_json["filter"];
 
-      std::cout << "Worker " << GetId() << " processing image: " << image_path
+      std::cout << "Worker " << get_id() << " processing image: " << image_path
                 << " with filter: " << filter << std::endl;
 
       // Simulate image processing steps
@@ -59,7 +59,7 @@ void RunConsumer() {
   CachearooClient client(settings);
 
   // Wait for connection
-  while (!client.IsConnected()) {
+  while (!client.is_connected()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   std::cout << "Consumer connected!" << std::endl;
@@ -73,7 +73,7 @@ void RunConsumer() {
   }
 
   // Set up job query handler
-  consumer.SetJobQueryHandler(
+  consumer.set_job_query_handler(
       [&workers](const std::string& job, JobQueryResponseCallback response) {
         try {
           auto job_json = nlohmann::json::parse(job);
@@ -87,8 +87,8 @@ void RunConsumer() {
 
           // Find an available worker
           for (auto& worker : workers) {
-            if (worker->IsAvailable()) {
-              worker->SetAvailable(false);
+            if (worker->is_available()) {
+              worker->set_available(false);
               response(0, worker);
               return;
             }
@@ -117,13 +117,13 @@ void RunConsumer() {
 
   std::cout << "Image processing consumer is running with " << workers.size() << " workers."
             << std::endl;
-  std::cout << "Current job count: " << consumer.GetJobCount() << std::endl;
+  std::cout << "Current job count: " << consumer.get_job_count() << std::endl;
   std::cout << "Press Enter to stop..." << std::endl;
   std::cin.get();
 
   // Give time for any pending operations and close properly
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  client.Close();
+  client.close();
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 
@@ -136,7 +136,7 @@ void RunProducer() {
   CachearooClient client(settings);
 
   // Wait for connection
-  while (!client.IsConnected()) {
+  while (!client.is_connected()) {
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
   }
   std::cout << "Producer connected!" << std::endl;
@@ -162,7 +162,7 @@ void RunProducer() {
                 << ")" << std::endl;
 
       // Submit job asynchronously with progress tracking
-      auto future = producer.AddJobAsync(job.dump(), [](const std::string& progress) {
+      auto future = producer.add_job_async(job.dump(), [](const std::string& progress) {
         std::cout << "Progress update: " << progress << std::endl;
       });
 
@@ -189,7 +189,7 @@ void RunProducer() {
 
   // Give time for any pending operations and close properly
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
-  client.Close();
+  client.close();
   std::this_thread::sleep_for(std::chrono::milliseconds(100));
 }
 

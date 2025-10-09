@@ -28,12 +28,12 @@ class Requestor {
             int progress_timeout = 5000);
   ~Requestor();
 
-  std::future<std::string> RequestAsync(const std::string& message,
-                                        ProgressCallback progress_callback = nullptr,
-                                        int timeout = 0, int progress_timeout = 0);
-  std::string Request(const std::string& message, ProgressCallback progress_callback = nullptr,
+  std::future<std::string> request_async(const std::string& message,
+                                         ProgressCallback progress_callback = nullptr,
+                                         int timeout = 0, int progress_timeout = 0);
+  std::string request(const std::string& message, ProgressCallback progress_callback = nullptr,
                       int timeout = 0, int progress_timeout = 0);
-  void Destroy();
+  void destroy();
 
  private:
   struct PendingRequest {
@@ -67,8 +67,8 @@ class Replier {
   Replier(CachearooClient* client, const std::string& channel);
   ~Replier();
 
-  void SetMessageHandler(MessageCallback handler) { message_handler_ = std::move(handler); }
-  void Destroy();
+  void set_message_handler(MessageCallback handler) { message_handler_ = std::move(handler); }
+  void destroy();
 
  private:
   void OnRequest(const Event& event);
@@ -85,13 +85,13 @@ class Worker {
  public:
   explicit Worker(const std::string& id) : id_(id), available_(true) {}
 
-  const std::string& GetId() const { return id_; }
-  bool IsAvailable() const { return available_.load(); }
-  void SetAvailable(bool available) { available_.store(available); }
-  void Release() { available_.store(true); }
+  const std::string& get_id() const { return id_; }
+  bool is_available() const { return available_.load(); }
+  void set_available(bool available) { available_.store(available); }
+  void release() { available_.store(true); }
 
-  void SetWorkHandler(WorkCallback handler) { work_handler_ = std::move(handler); }
-  WorkCallback GetWorkHandler() const { return work_handler_; }
+  void set_work_handler(WorkCallback handler) { work_handler_ = std::move(handler); }
+  WorkCallback get_work_handler() const { return work_handler_; }
 
  private:
   std::string id_;
@@ -105,12 +105,12 @@ class Producer {
            int progress_timeout = 10000);
   ~Producer();
 
-  std::future<std::string> AddJobAsync(const std::string& job,
-                                       ProgressCallback progress_callback = nullptr,
-                                       int timeout = 0, int progress_timeout = 0);
-  std::string AddJob(const std::string& job, ProgressCallback progress_callback = nullptr,
-                     int timeout = 0, int progress_timeout = 0);
-  void Destroy();
+  std::future<std::string> add_job_async(const std::string& job,
+                                         ProgressCallback progress_callback = nullptr,
+                                         int timeout = 0, int progress_timeout = 0);
+  std::string add_job(const std::string& job, ProgressCallback progress_callback = nullptr,
+                      int timeout = 0, int progress_timeout = 0);
+  void destroy();
 
  private:
   struct PendingJob {
@@ -143,9 +143,9 @@ class CompetingConsumer {
                     const std::string& client_id);
   ~CompetingConsumer();
 
-  void SetJobQueryHandler(JobQueryCallback handler) { job_query_handler_ = std::move(handler); }
-  int GetJobCount() const { return job_count_.load(); }
-  void Destroy();
+  void set_job_query_handler(JobQueryCallback handler) { job_query_handler_ = std::move(handler); }
+  int get_job_count() const { return job_count_.load(); }
+  void destroy();
 
   // Event callback for job notifications
   std::function<void(const nlohmann::json&)> OnJob;

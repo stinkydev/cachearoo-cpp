@@ -20,9 +20,9 @@ Requestor::Requestor(CachearooClient* client, const std::string& channel, int ti
   progress_channel_ = std::string(kProgressPrefix) + channel;
 
   // Set up event listeners
-  reply_listener_id_ = client_->GetConnection()->AddListener(
+  reply_listener_id_ = client_->get_connection()->add_listener(
       channel_, "*", true, [this](const Event& event) { OnReply(event); });
-  progress_listener_id_ = client_->GetConnection()->AddListener(
+  progress_listener_id_ = client_->get_connection()->add_listener(
       progress_channel_, "*", true, [this](const Event& event) { OnProgress(event); });
 
   // Start timeout checking thread
@@ -30,31 +30,31 @@ Requestor::Requestor(CachearooClient* client, const std::string& channel, int ti
 }
 
 Requestor::~Requestor() {
-  Destroy();
+  destroy();
 }
 
-void Requestor::Destroy() {
+void Requestor::destroy() {
   shutdown_.store(true);
 
   if (timeout_thread_.joinable()) {
     timeout_thread_.join();
   }
 
-  if (client_ && client_->GetConnection()) {
+  if (client_ && client_->get_connection()) {
     if (reply_listener_id_ != -1) {
-      client_->GetConnection()->RemoveListener(reply_listener_id_);
+      client_->get_connection()->remove_listener(reply_listener_id_);
       reply_listener_id_ = -1;
     }
     if (progress_listener_id_ != -1) {
-      client_->GetConnection()->RemoveListener(progress_listener_id_);
+      client_->get_connection()->remove_listener(progress_listener_id_);
       progress_listener_id_ = -1;
     }
   }
 }
 
-std::future<std::string> Requestor::RequestAsync(const std::string& message,
-                                                 ProgressCallback progress_callback, int timeout,
-                                                 int progress_timeout) {
+std::future<std::string> Requestor::request_async(const std::string& message,
+                                                  ProgressCallback progress_callback, int timeout,
+                                                  int progress_timeout) {
   if (timeout == 0)
     timeout = timeout_;
   if (progress_timeout == 0)
@@ -63,7 +63,7 @@ std::future<std::string> Requestor::RequestAsync(const std::string& message,
   std::string id = GenerateUuid();
 
   // Signal the request event
-  client_->GetConnection()->SignalEvent(channel_, id, message);
+  client_->get_connection()->signal_event(channel_, id, message);
 
   auto pending_request = std::make_unique<PendingRequest>();
   auto now = std::chrono::steady_clock::now();
@@ -81,9 +81,9 @@ std::future<std::string> Requestor::RequestAsync(const std::string& message,
   return future;
 }
 
-std::string Requestor::Request(const std::string& message, ProgressCallback progress_callback,
+std::string Requestor::request(const std::string& message, ProgressCallback progress_callback,
                                int timeout, int progress_timeout) {
-  return RequestAsync(message, progress_callback, timeout, progress_timeout).get();
+  return request_async(message, progress_callback, timeout, progress_timeout).get();
 }
 
 void Requestor::OnReply(const Event& event) {
@@ -151,17 +151,17 @@ Replier::Replier(CachearooClient* client, const std::string& channel) : client_(
   channel_ = std::string(kRequestReplyPrefix) + channel;
   progress_channel_ = std::string(kProgressPrefix) + channel;
 
-  request_listener_id_ = client_->GetConnection()->AddListener(
+  request_listener_id_ = client_->get_connection()->add_listener(
       channel_, "*", true, [this](const Event& event) { OnRequest(event); });
 }
 
 Replier::~Replier() {
-  Destroy();
+  destroy();
 }
 
-void Replier::Destroy() {
-  if (client_ && client_->GetConnection() && request_listener_id_ != -1) {
-    client_->GetConnection()->RemoveListener(request_listener_id_);
+void Replier::destroy() {
+  if (client_ && client_->get_connection() && request_listener_id_ != -1) {
+    client_->get_connection()->remove_listener(request_listener_id_);
     request_listener_id_ = -1;
   }
 }
@@ -175,13 +175,13 @@ void Replier::OnRequest(const Event& event) {
     nlohmann::json response;
     response["err"] = error.empty() ? nullptr : nlohmann::json(error);
     response["data"] = data;
-    client_->GetConnection()->SignalEvent(channel_, key, response.dump());
+    client_->get_connection()->signal_event(channel_, key, response.dump());
   };
 
   ProgressCallback progress_callback = [this, key = event.key](const std::string& data) {
     nlohmann::json progress;
     progress["data"] = data;
-    client_->GetConnection()->SignalEvent(progress_channel_, key, progress.dump());
+    client_->get_connection()->signal_event(progress_channel_, key, progress.dump());
   };
 
   message_handler_(*event.value, response_callback, progress_callback);
@@ -194,7 +194,7 @@ Producer::Producer(CachearooClient* client, const std::string& channel, int time
   job_queue_ = std::string(kChannelPrefix) + "." + channel + ".jobs";
   status_queue_ = std::string(kChannelPrefix) + "." + channel + ".status";
 
-  job_status_listener_id_ = client_->GetConnection()->AddListener(
+  job_status_listener_id_ = client_->get_connection()->add_listener(
       status_queue_, "*", true, [this](const Event& event) { OnJobStatus(event); });
 
   // Start timeout checking thread
@@ -202,25 +202,25 @@ Producer::Producer(CachearooClient* client, const std::string& channel, int time
 }
 
 Producer::~Producer() {
-  Destroy();
+  destroy();
 }
 
-void Producer::Destroy() {
+void Producer::destroy() {
   shutdown_.store(true);
 
   if (timeout_thread_.joinable()) {
     timeout_thread_.join();
   }
 
-  if (client_ && client_->GetConnection() && job_status_listener_id_ != -1) {
-    client_->GetConnection()->RemoveListener(job_status_listener_id_);
+  if (client_ && client_->get_connection() && job_status_listener_id_ != -1) {
+    client_->get_connection()->remove_listener(job_status_listener_id_);
     job_status_listener_id_ = -1;
   }
 }
 
-std::future<std::string> Producer::AddJobAsync(const std::string& job,
-                                               ProgressCallback progress_callback, int timeout,
-                                               int progress_timeout) {
+std::future<std::string> Producer::add_job_async(const std::string& job,
+                                                 ProgressCallback progress_callback, int timeout,
+                                                 int progress_timeout) {
   if (timeout == 0)
     timeout = timeout_;
   if (progress_timeout == 0)
@@ -229,7 +229,7 @@ std::future<std::string> Producer::AddJobAsync(const std::string& job,
   std::string id = GenerateUuid();
 
   // Write job to queue
-  client_->GetConnection()->Write(job_queue_, id, job);
+  client_->get_connection()->write(job_queue_, id, job);
 
   auto pending_job = std::make_unique<PendingJob>();
   auto now = std::chrono::steady_clock::now();
@@ -247,9 +247,9 @@ std::future<std::string> Producer::AddJobAsync(const std::string& job,
   return future;
 }
 
-std::string Producer::AddJob(const std::string& job, ProgressCallback progress_callback,
-                             int timeout, int progress_timeout) {
-  return AddJobAsync(job, progress_callback, timeout, progress_timeout).get();
+std::string Producer::add_job(const std::string& job, ProgressCallback progress_callback,
+                              int timeout, int progress_timeout) {
+  return add_job_async(job, progress_callback, timeout, progress_timeout).get();
 }
 
 void Producer::OnJobStatus(const Event& event) {
@@ -270,7 +270,7 @@ void Producer::OnJobStatus(const Event& event) {
         }
 
         // Clean up the status entry
-        client_->GetConnection()->Delete(status_queue_, event.key);
+        client_->get_connection()->delete_key(status_queue_, event.key);
         pending_jobs_.erase(it);
       } else {
         // Progress update
@@ -318,17 +318,17 @@ CompetingConsumer::CompetingConsumer(CachearooClient* client, const std::string&
   job_queue_ = std::string(kChannelPrefix) + "." + channel + ".jobs";
   status_queue_ = std::string(kChannelPrefix) + "." + channel + ".status";
 
-  job_queue_listener_id_ = client_->GetConnection()->AddListener(
+  job_queue_listener_id_ = client_->get_connection()->add_listener(
       job_queue_, "*", true, [this](const Event& event) { OnJobReceived(event); });
 }
 
 CompetingConsumer::~CompetingConsumer() {
-  Destroy();
+  destroy();
 }
 
-void CompetingConsumer::Destroy() {
-  if (client_ && client_->GetConnection() && job_queue_listener_id_ != -1) {
-    client_->GetConnection()->RemoveListener(job_queue_listener_id_);
+void CompetingConsumer::destroy() {
+  if (client_ && client_->get_connection() && job_queue_listener_id_ != -1) {
+    client_->get_connection()->remove_listener(job_queue_listener_id_);
     job_queue_listener_id_ = -1;
   }
 }
@@ -388,13 +388,13 @@ void CompetingConsumer::JobHandler(const std::string& key, const nlohmann::json&
     status_obj["progress"] = nullptr;
 
     // Try to claim the job
-    client_->GetConnection()->Write(status_queue_, key, status_obj.dump(), true);
-    client_->GetConnection()->Delete(job_queue_, key);
+    client_->get_connection()->write(status_queue_, key, status_obj.dump(), true);
+    client_->get_connection()->delete_key(job_queue_, key);
 
     job_count_++;
 
     // Execute the work
-    auto work_handler = worker->GetWorkHandler();
+    auto work_handler = worker->get_work_handler();
     if (work_handler) {
       MessageResponseCallback callback = [this, key, status_obj](const std::string& error,
                                                                  const std::string& data) mutable {
@@ -404,7 +404,7 @@ void CompetingConsumer::JobHandler(const std::string& key, const nlohmann::json&
         status_obj["data"] = data;
         status_obj["done"] = true;
 
-        client_->GetConnection()->Write(status_queue_, key, status_obj.dump());
+        client_->get_connection()->write(status_queue_, key, status_obj.dump());
 
         if (OnJob) {
           nlohmann::json job_notification;
@@ -418,7 +418,7 @@ void CompetingConsumer::JobHandler(const std::string& key, const nlohmann::json&
       ProgressCallback progress_callback = [this, key,
                                             status_obj](const std::string& progress) mutable {
         status_obj["progress"] = progress;
-        client_->GetConnection()->Write(status_queue_, key, status_obj.dump());
+        client_->get_connection()->write(status_queue_, key, status_obj.dump());
 
         if (OnJob) {
           nlohmann::json job_notification;
@@ -434,9 +434,9 @@ void CompetingConsumer::JobHandler(const std::string& key, const nlohmann::json&
 
   } catch (const AlreadyExistsError&) {
     // Job already taken by another consumer, release worker
-    worker->Release();
+    worker->release();
   } catch (const std::exception&) {
-    worker->Release();
+    worker->release();
     throw;
   }
 }

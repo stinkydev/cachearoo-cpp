@@ -132,7 +132,7 @@ TEST(ExceptionHierarchyTest, TimeoutError) {
     throw TimeoutError("Test timeout", false);
   } catch (const TimeoutError& e) {
     EXPECT_STREQ(e.what(), "Test timeout");
-    EXPECT_FALSE(e.IsProgressTimeout());
+    EXPECT_FALSE(e.is_progress_timeout());
   } catch (...) {
     FAIL() << "Wrong exception type caught";
   }

@@ -21,7 +21,7 @@ int main() {
 
     // Wait for connection
     std::cout << "Waiting for connection..." << std::endl;
-    while (!client.IsConnected()) {
+    while (!client.is_connected()) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     std::cout << "Connected!" << std::endl;
@@ -29,7 +29,7 @@ int main() {
     try {
       // Write some data
       std::cout << "Writing data..." << std::endl;
-      std::string key = client.Write("test-key", R"({"message": "Hello, Cachearoo!"})");
+      std::string key = client.write("test-key", R"({"message": "Hello, Cachearoo!"})");
       std::cout << "Written to key: " << key << std::endl;
     } catch (const std::exception& e) {
       std::cerr << "Write failed: " << e.what() << std::endl;
@@ -38,7 +38,7 @@ int main() {
     try {
       // Read the data back
       std::cout << "Reading data..." << std::endl;
-      std::string data = client.Read("test-key");
+      std::string data = client.read("test-key");
       std::cout << "Read data: " << data << std::endl;
     } catch (const std::exception& e) {
       std::cerr << "Read failed: " << e.what() << std::endl;
@@ -49,7 +49,7 @@ int main() {
       std::cout << "Listing keys..." << std::endl;
       RequestOptions list_options;
       list_options.keys_only = true;
-      auto items = client.List(list_options);
+      auto items = client.list(list_options);
 
       std::cout << "Found " << items.size() << " items:" << std::endl;
       for (const auto& item : items) {
@@ -62,10 +62,10 @@ int main() {
     try {
       // Update the data using patch
       std::cout << "Patching data..." << std::endl;
-      client.Patch("test-key", R"({"message": "Hello, Updated Cachearoo!"})");
+      client.patch("test-key", R"({"message": "Hello, Updated Cachearoo!"})");
 
       // Read the updated data
-      std::string updated_data = client.Read("test-key");
+      std::string updated_data = client.read("test-key");
       std::cout << "Updated data: " << updated_data << std::endl;
     } catch (const std::exception& e) {
       std::cerr << "Patch/Read failed: " << e.what() << std::endl;
@@ -74,7 +74,7 @@ int main() {
     try {
       // Clean up
       std::cout << "Removing data..." << std::endl;
-      client.Remove("test-key");
+      client.remove("test-key");
     } catch (const std::exception& e) {
       std::cerr << "Remove failed: " << e.what() << std::endl;
     }

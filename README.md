@@ -187,12 +187,12 @@ int main() {
         
         // Wait for connection
         int attempts = 0;
-        while (!client.IsConnected() && attempts < 100) {
+        while (!client.is_connected() && attempts < 100) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
             attempts++;
         }
         
-        if (!client.IsConnected()) {
+        if (!client.is_connected()) {
             std::cerr << "Failed to connect to Cachearoo server\n";
             return 1;
         }
@@ -200,11 +200,11 @@ int main() {
         std::cout << "Connected to Cachearoo!\n";
         
         // Use the client...
-        client.Write("test", R"({"hello": "world"})");
-        std::string data = client.Read("test");
+        client.write("test", R"({"hello": "world"})");
+        std::string data = client.read("test");
         std::cout << "Data: " << data << "\n";
         
-        client.Close();
+        client.close();
         
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << "\n";
@@ -246,27 +246,27 @@ int main() {
     CachearooClient client(settings);
     
     // Wait for connection
-    while (!client.IsConnected()) {
+    while (!client.is_connected()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
     // Write data
-    std::string key = client.Write("test-key", R"({"message": "Hello World"})");
+    std::string key = client.write("test-key", R"({"message": "Hello World"})");
     
     // Read data
-    std::string data = client.Read("test-key");
+    std::string data = client.read("test-key");
     
     // List keys
-    auto items = client.List();
+    auto items = client.list();
     
     // Update data
-    client.Patch("test-key", R"({"message": "Updated message"})");
+    client.patch("test-key", R"({"message": "Updated message"})");
     
     // Remove data
-    client.Remove("test-key");
+    client.remove("test-key");
     
     // Proper cleanup
-    client.Close();
+    client.close();
     
     return 0;
 }
@@ -289,13 +289,13 @@ int main() {
     CachearooClient client(settings);
     
     // Wait for connection
-    while (!client.IsConnected()) {
+    while (!client.is_connected()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
     Replier replier(&client, "calculator");
     
-    replier.SetMessageHandler([](const std::string& message, 
+    replier.set_message_handler([](const std::string& message, 
                                  MessageResponseCallback response,
                                  ProgressCallback progress) {
         auto json_msg = nlohmann::json::parse(message);
@@ -314,7 +314,7 @@ int main() {
     std::cin.get();
     
     // Proper cleanup
-    client.Close();
+    client.close();
     
     return 0;
 }
@@ -335,7 +335,7 @@ int main() {
     CachearooClient client(settings);
     
     // Wait for connection
-    while (!client.IsConnected()) {
+    while (!client.is_connected()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
@@ -345,7 +345,7 @@ int main() {
     request["a"] = 10;
     request["b"] = 5;
     
-    std::string result = requestor.Request(request.dump(), [](const std::string& progress) {
+    std::string result = requestor.request(request.dump(), [](const std::string& progress) {
         std::cout << "Progress: " << progress << std::endl;
     });
     
@@ -353,7 +353,7 @@ int main() {
     std::cout << "Result: " << result_json["result"] << std::endl;
     
     // Proper cleanup
-    client.Close();
+    client.close();
     
     return 0;
 }
@@ -370,7 +370,7 @@ using namespace cachearoo;
 class MyWorker : public Worker {
 public:
     explicit MyWorker(const std::string& id) : Worker(id) {
-        SetWorkHandler([this](const std::string& job, MessageResponseCallback callback, ProgressCallback progress) {
+        set_work_handler([this](const std::string& job, MessageResponseCallback callback, ProgressCallback progress) {
             ProcessJob(job, callback, progress);
         });
     }
@@ -398,7 +398,7 @@ int main() {
     CachearooClient client(settings);
     
     // Wait for connection
-    while (!client.IsConnected()) {
+    while (!client.is_connected()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
@@ -411,7 +411,7 @@ int main() {
     }
     
     // Set up job query handler
-    consumer.SetJobQueryHandler([&workers](const std::string& job, JobQueryResponseCallback response) {
+    consumer.set_job_query_handler([&workers](const std::string& job, JobQueryResponseCallback response) {
         // Find available worker
         for (auto& worker : workers) {
             if (worker->IsAvailable()) {
@@ -427,7 +427,7 @@ int main() {
     std::cin.get();
     
     // Proper cleanup
-    client.Close();
+    client.close();
     
     return 0;
 }
@@ -448,7 +448,7 @@ int main() {
     CachearooClient client(settings);
     
     // Wait for connection
-    while (!client.IsConnected()) {
+    while (!client.is_connected()) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
     }
     
@@ -461,7 +461,7 @@ int main() {
         job["data"] = "Work item " + std::to_string(i);
         
         try {
-            std::string result = producer.AddJob(job.dump(), [i](const std::string& progress) {
+            std::string result = producer.add_job(job.dump(), [i](const std::string& progress) {
                 std::cout << "Job " << i << " progress: " << progress << std::endl;
             });
             
@@ -472,7 +472,7 @@ int main() {
     }
     
     // Proper cleanup
-    client.Close();
+    client.close();
     
     return 0;
 }
@@ -503,16 +503,16 @@ struct CachearooSettings {
 Main client class for data operations:
 
 #### Data Operations
-- `std::string Read(const std::string& key, const RequestOptions& options = {})`
-- `std::vector<ListReplyItem> List(const RequestOptions& options = {})`
-- `std::string Write(const std::string& key, const std::string& value, const RequestOptions& options = {})`
-- `std::string Patch(const std::string& key, const std::string& patch, const RequestOptions& options = {})`
-- `void Remove(const std::string& key, const RequestOptions& options = {})`
+- `std::string read(const std::string& key, const RequestOptions& options = {})`
+- `std::vector<ListReplyItem> list(const RequestOptions& options = {})`
+- `std::string write(const std::string& key, const std::string& value, const RequestOptions& options = {})`
+- `std::string patch(const std::string& key, const std::string& patch, const RequestOptions& options = {})`
+- `void remove(const std::string& key, const RequestOptions& options = {})`
 
 #### Connection Management
-- `bool IsConnected() const`
-- `void Close()`
-- `CachearooConnection* GetConnection()`
+- `bool is_connected() const`
+- `void close()`
+- `CachearooConnection* get_connection()`
 
 ### RequestOptions
 
@@ -535,19 +535,26 @@ struct RequestOptions {
 
 ### Event System
 
-Subscribe to real-time events:
+Subscribe to real-time events. The `add_listener` methods return listener IDs that can be used to remove specific listeners:
 
 ```cpp
-// Text events
-client.GetConnection()->AddListener("bucket", "key", true, [](const Event& event) {
+// Text events - returns listener ID
+int listener_id = client.get_connection()->add_listener("bucket", "key", true, [](const Event& event) {
     std::cout << "Event: " << event.key << " = " << event.value.value_or("") << std::endl;
 });
 
-// Binary events
-client.GetConnection()->AddBinaryListener("bucket", "key", [](const BinaryEvent& event) {
+// Binary events - returns listener ID
+int binary_listener_id = client.get_connection()->add_binary_listener("bucket", "key", [](const BinaryEvent& event) {
     std::cout << "Binary event: " << event.key << ", type: " << event.type 
               << ", size: " << event.content.size() << std::endl;
 });
+
+// Remove specific listeners using their IDs
+client.get_connection()->remove_listener(listener_id);
+client.get_connection()->remove_binary_listener(binary_listener_id);
+
+// Or remove all listeners at once
+client.get_connection()->remove_all_listeners();
 ```
 
 ### Error Handling
@@ -560,12 +567,12 @@ The library throws standard C++ exceptions:
 
 ```cpp
 try {
-    client.Write("existing-key", "data", options);
+    client.write("existing-key", "data", options);
 } catch (const AlreadyExistsError& e) {
     std::cout << "Key already exists: " << e.what() << std::endl;
 } catch (const TimeoutError& e) {
     std::cout << "Timeout: " << e.what() << std::endl;
-    if (e.IsProgressTimeout()) {
+    if (e.is_progress_timeout()) {
         std::cout << "This was a progress timeout" << std::endl;
     }
 } catch (const std::exception& e) {
@@ -628,13 +635,13 @@ All operations are thread-safe. The library uses internal mutexes and atomic ope
 - Enable connection pooling for high-throughput scenarios
 - Consider using async operations for better concurrency
 - Use binary events for large data transfers
-- Always call `Close()` before destroying the client to ensure proper cleanup
+- Always call `close()` before destroying the client to ensure proper cleanup
 
 ## Best Practices
 
 ### Proper Cleanup
 
-Always call `Close()` on the client before it goes out of scope to ensure proper cleanup of connections and threads:
+Always call `close()` on the client before it goes out of scope to ensure proper cleanup of connections and threads:
 
 ```cpp
 {
@@ -642,7 +649,7 @@ Always call `Close()` on the client before it goes out of scope to ensure proper
     
     // ... use the client ...
     
-    client.Close();  // Important: Clean shutdown
+    client.close();  // Important: Clean shutdown
 }  // Client destructor is now safe
 ```
 
@@ -656,20 +663,20 @@ try {
     
     // Wait for connection with timeout
     int attempts = 0;
-    while (!client.IsConnected() && attempts < 100) {
+    while (!client.is_connected() && attempts < 100) {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
         attempts++;
     }
     
-    if (!client.IsConnected()) {
+    if (!client.is_connected()) {
         std::cerr << "Failed to connect" << std::endl;
         return 1;
     }
     
     // Perform operations
-    client.Write("key", "value");
+    client.write("key", "value");
     
-    client.Close();
+    client.close();
 } catch (const std::exception& e) {
     std::cerr << "Error: " << e.what() << std::endl;
     return 1;
@@ -752,11 +759,11 @@ See `.github/workflows/ci.yml` for the complete CI configuration.
 - Add connection timeout logic:
   ```cpp
   int attempts = 0;
-  while (!client.IsConnected() && attempts < 100) {
+  while (!client.is_connected() && attempts < 100) {
       std::this_thread::sleep_for(std::chrono::milliseconds(100));
       attempts++;
   }
-  if (!client.IsConnected()) {
+  if (!client.is_connected()) {
       throw std::runtime_error("Connection timeout");
   }
   ```
@@ -781,7 +788,7 @@ See `.github/workflows/ci.yml` for the complete CI configuration.
 - Use binary events for large data transfers
 
 **Issue: Memory leaks**
-- Always call `Close()` before destroying client
+- Always call `close()` before destroying client
 - Don't forget to clear event listeners when no longer needed
 - Use RAII patterns to ensure proper cleanup
 

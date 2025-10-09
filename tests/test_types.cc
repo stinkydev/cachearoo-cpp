@@ -132,14 +132,14 @@ TEST(TimeoutErrorTest, BasicUsage) {
   TimeoutError error("Request timed out", false);
 
   EXPECT_STREQ(error.what(), "Request timed out");
-  EXPECT_FALSE(error.IsProgressTimeout());
+  EXPECT_FALSE(error.is_progress_timeout());
 }
 
 TEST(TimeoutErrorTest, ProgressTimeout) {
   TimeoutError error("Progress timeout", true);
 
   EXPECT_STREQ(error.what(), "Progress timeout");
-  EXPECT_TRUE(error.IsProgressTimeout());
+  EXPECT_TRUE(error.is_progress_timeout());
 }
 
 // Test AlreadyExistsError exception
