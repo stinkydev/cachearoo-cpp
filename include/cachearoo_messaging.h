@@ -58,8 +58,8 @@ class Requestor {
 
   std::thread timeout_thread_;
   std::atomic<bool> shutdown_{false};
-  EventCallback reply_listener_;
-  EventCallback progress_listener_;
+  int reply_listener_id_{-1};
+  int progress_listener_id_{-1};
 };
 
 class Replier {
@@ -77,7 +77,7 @@ class Replier {
   std::string channel_;
   std::string progress_channel_;
   MessageCallback message_handler_;
-  EventCallback request_listener_;
+  int request_listener_id_{-1};
 };
 
 // Competing Consumers Pattern Classes
@@ -134,7 +134,7 @@ class Producer {
 
   std::thread timeout_thread_;
   std::atomic<bool> shutdown_{false};
-  EventCallback job_status_listener_;
+  int job_status_listener_id_{-1};
 };
 
 class CompetingConsumer {
@@ -162,7 +162,7 @@ class CompetingConsumer {
   JobQueryCallback job_query_handler_;
 
   std::atomic<int> job_count_{0};
-  EventCallback job_queue_listener_;
+  int job_queue_listener_id_{-1};
 };
 
 }  // namespace cachearoo

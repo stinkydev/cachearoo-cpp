@@ -259,13 +259,21 @@ void CachearooConnection::ProcessStringMessage(const std::string& message) {
       event.value = json_msg["value"].dump();
     }
 
-    // Fire event callbacks
-    std::lock_guard<std::mutex> lock(events_mutex_);
-    for (const auto& reg : event_registrations_) {
-      if ((reg.bucket == "*" || reg.bucket == event.bucket) &&
-          (reg.key == "*" || reg.key == event.key)) {
-        reg.callback(event);
+    // Collect matching callbacks while holding the lock
+    std::vector<EventCallback> callbacks_to_execute;
+    {
+      std::lock_guard<std::mutex> lock(events_mutex_);
+      for (const auto& reg : event_registrations_) {
+        if ((reg.bucket == "*" || reg.bucket == event.bucket) &&
+            (reg.key == "*" || reg.key == event.key)) {
+          callbacks_to_execute.push_back(reg.callback);
+        }
       }
+    }
+
+    // Execute callbacks outside the lock to prevent deadlocks
+    for (const auto& callback : callbacks_to_execute) {
+      callback(event);
     }
   } catch (const std::exception& e) {
     if (on_error_)
@@ -288,13 +296,21 @@ void CachearooConnection::ProcessBinaryMessage(const std::vector<uint8_t>& data)
   event.key = header.key;
   event.content = std::vector<uint8_t>(data.begin() + 128, data.end());
 
-  // Fire binary event callbacks
-  std::lock_guard<std::mutex> lock(events_mutex_);
-  for (const auto& reg : binary_event_registrations_) {
-    if ((reg.bucket == "*" || reg.bucket == event.bucket) &&
-        (reg.key == "*" || reg.key == event.key)) {
-      reg.callback(event);
+  // Collect matching binary callbacks while holding the lock
+  std::vector<BinaryEventCallback> callbacks_to_execute;
+  {
+    std::lock_guard<std::mutex> lock(events_mutex_);
+    for (const auto& reg : binary_event_registrations_) {
+      if ((reg.bucket == "*" || reg.bucket == event.bucket) &&
+          (reg.key == "*" || reg.key == event.key)) {
+        callbacks_to_execute.push_back(reg.callback);
+      }
     }
+  }
+
+  // Execute callbacks outside the lock to prevent deadlocks
+  for (const auto& callback : callbacks_to_execute) {
+    callback(event);
   }
 }
 
@@ -392,35 +408,43 @@ void CachearooConnection::CheckRequestTimeouts() {
   }
 }
 
-void CachearooConnection::AddListener(const std::string& bucket, const std::string& key,
-                                      bool send_values, EventCallback callback) {
+int CachearooConnection::AddListener(const std::string& bucket, const std::string& key,
+                                     bool send_values, EventCallback callback) {
   if (send_values)
     send_values_ = true;
 
   std::lock_guard<std::mutex> lock(events_mutex_);
-  event_registrations_.push_back({bucket, key, std::move(callback)});
+  int id = ++listener_id_counter_;
+  event_registrations_.push_back({id, bucket, key, std::move(callback)});
+  RegisterEvents();
+  return id;
+}
+
+int CachearooConnection::AddBinaryListener(const std::string& bucket, const std::string& key,
+                                           BinaryEventCallback callback) {
+  std::lock_guard<std::mutex> lock(events_mutex_);
+  int id = ++listener_id_counter_;
+  binary_event_registrations_.push_back({id, bucket, key, std::move(callback)});
+  RegisterEvents();
+  return id;
+}
+
+void CachearooConnection::RemoveListener(int listener_id) {
+  std::lock_guard<std::mutex> lock(events_mutex_);
+  event_registrations_.erase(
+      std::remove_if(event_registrations_.begin(), event_registrations_.end(),
+                     [listener_id](const EventRegistration& reg) { return reg.id == listener_id; }),
+      event_registrations_.end());
   RegisterEvents();
 }
 
-void CachearooConnection::AddBinaryListener(const std::string& bucket, const std::string& key,
-                                            BinaryEventCallback callback) {
+void CachearooConnection::RemoveBinaryListener(int listener_id) {
   std::lock_guard<std::mutex> lock(events_mutex_);
-  binary_event_registrations_.push_back({bucket, key, std::move(callback)});
-  RegisterEvents();
-}
-
-void CachearooConnection::RemoveListener(EventCallback /* callback */) {
-  // Note: This is a simplified implementation. In a real implementation,
-  // you might want to store callbacks with unique identifiers.
-  std::lock_guard<std::mutex> lock(events_mutex_);
-  // For now, we'll leave this as a placeholder since function comparison is
-  // complex
-  RegisterEvents();
-}
-
-void CachearooConnection::RemoveBinaryListener(BinaryEventCallback /* callback */) {
-  // Note: Similar to RemoveListener, this is simplified
-  std::lock_guard<std::mutex> lock(events_mutex_);
+  binary_event_registrations_.erase(
+      std::remove_if(
+          binary_event_registrations_.begin(), binary_event_registrations_.end(),
+          [listener_id](const BinaryEventRegistration& reg) { return reg.id == listener_id; }),
+      binary_event_registrations_.end());
   RegisterEvents();
 }
 

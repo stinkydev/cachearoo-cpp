@@ -20,11 +20,10 @@ Requestor::Requestor(CachearooClient* client, const std::string& channel, int ti
   progress_channel_ = std::string(kProgressPrefix) + channel;
 
   // Set up event listeners
-  reply_listener_ = [this](const Event& event) { OnReply(event); };
-  progress_listener_ = [this](const Event& event) { OnProgress(event); };
-
-  client_->GetConnection()->AddListener(channel_, "*", true, reply_listener_);
-  client_->GetConnection()->AddListener(progress_channel_, "*", true, progress_listener_);
+  reply_listener_id_ = client_->GetConnection()->AddListener(
+      channel_, "*", true, [this](const Event& event) { OnReply(event); });
+  progress_listener_id_ = client_->GetConnection()->AddListener(
+      progress_channel_, "*", true, [this](const Event& event) { OnProgress(event); });
 
   // Start timeout checking thread
   timeout_thread_ = std::thread([this]() { CheckTimeouts(); });
@@ -42,8 +41,14 @@ void Requestor::Destroy() {
   }
 
   if (client_ && client_->GetConnection()) {
-    client_->GetConnection()->RemoveListener(reply_listener_);
-    client_->GetConnection()->RemoveListener(progress_listener_);
+    if (reply_listener_id_ != -1) {
+      client_->GetConnection()->RemoveListener(reply_listener_id_);
+      reply_listener_id_ = -1;
+    }
+    if (progress_listener_id_ != -1) {
+      client_->GetConnection()->RemoveListener(progress_listener_id_);
+      progress_listener_id_ = -1;
+    }
   }
 }
 
@@ -146,8 +151,8 @@ Replier::Replier(CachearooClient* client, const std::string& channel) : client_(
   channel_ = std::string(kRequestReplyPrefix) + channel;
   progress_channel_ = std::string(kProgressPrefix) + channel;
 
-  request_listener_ = [this](const Event& event) { OnRequest(event); };
-  client_->GetConnection()->AddListener(channel_, "*", true, request_listener_);
+  request_listener_id_ = client_->GetConnection()->AddListener(
+      channel_, "*", true, [this](const Event& event) { OnRequest(event); });
 }
 
 Replier::~Replier() {
@@ -155,8 +160,9 @@ Replier::~Replier() {
 }
 
 void Replier::Destroy() {
-  if (client_ && client_->GetConnection()) {
-    client_->GetConnection()->RemoveListener(request_listener_);
+  if (client_ && client_->GetConnection() && request_listener_id_ != -1) {
+    client_->GetConnection()->RemoveListener(request_listener_id_);
+    request_listener_id_ = -1;
   }
 }
 
@@ -188,8 +194,8 @@ Producer::Producer(CachearooClient* client, const std::string& channel, int time
   job_queue_ = std::string(kChannelPrefix) + "." + channel + ".jobs";
   status_queue_ = std::string(kChannelPrefix) + "." + channel + ".status";
 
-  job_status_listener_ = [this](const Event& event) { OnJobStatus(event); };
-  client_->GetConnection()->AddListener(status_queue_, "*", true, job_status_listener_);
+  job_status_listener_id_ = client_->GetConnection()->AddListener(
+      status_queue_, "*", true, [this](const Event& event) { OnJobStatus(event); });
 
   // Start timeout checking thread
   timeout_thread_ = std::thread([this]() { CheckTimeouts(); });
@@ -206,8 +212,9 @@ void Producer::Destroy() {
     timeout_thread_.join();
   }
 
-  if (client_ && client_->GetConnection()) {
-    client_->GetConnection()->RemoveListener(job_status_listener_);
+  if (client_ && client_->GetConnection() && job_status_listener_id_ != -1) {
+    client_->GetConnection()->RemoveListener(job_status_listener_id_);
+    job_status_listener_id_ = -1;
   }
 }
 
@@ -311,8 +318,8 @@ CompetingConsumer::CompetingConsumer(CachearooClient* client, const std::string&
   job_queue_ = std::string(kChannelPrefix) + "." + channel + ".jobs";
   status_queue_ = std::string(kChannelPrefix) + "." + channel + ".status";
 
-  job_queue_listener_ = [this](const Event& event) { OnJobReceived(event); };
-  client_->GetConnection()->AddListener(job_queue_, "*", true, job_queue_listener_);
+  job_queue_listener_id_ = client_->GetConnection()->AddListener(
+      job_queue_, "*", true, [this](const Event& event) { OnJobReceived(event); });
 }
 
 CompetingConsumer::~CompetingConsumer() {
@@ -320,8 +327,9 @@ CompetingConsumer::~CompetingConsumer() {
 }
 
 void CompetingConsumer::Destroy() {
-  if (client_ && client_->GetConnection()) {
-    client_->GetConnection()->RemoveListener(job_queue_listener_);
+  if (client_ && client_->GetConnection() && job_queue_listener_id_ != -1) {
+    client_->GetConnection()->RemoveListener(job_queue_listener_id_);
+    job_queue_listener_id_ = -1;
   }
 }
 

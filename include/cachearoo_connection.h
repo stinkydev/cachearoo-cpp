@@ -54,12 +54,12 @@ class CachearooConnection {
   void SetOnPong(PongCallback callback) { on_pong_ = std::move(callback); }
 
   // Event listeners
-  void AddListener(const std::string& bucket, const std::string& key, bool send_values,
-                   EventCallback callback);
-  void AddBinaryListener(const std::string& bucket, const std::string& key,
-                         BinaryEventCallback callback);
-  void RemoveListener(EventCallback callback);
-  void RemoveBinaryListener(BinaryEventCallback callback);
+  int AddListener(const std::string& bucket, const std::string& key, bool send_values,
+                  EventCallback callback);
+  int AddBinaryListener(const std::string& bucket, const std::string& key,
+                        BinaryEventCallback callback);
+  void RemoveListener(int listener_id);
+  void RemoveBinaryListener(int listener_id);
   void RemoveAllListeners();
 
   // Data operations
@@ -83,12 +83,14 @@ class CachearooConnection {
   using ConnectionHdl = websocketpp::connection_hdl;
 
   struct EventRegistration {
+    int id;
     std::string bucket;
     std::string key;
     EventCallback callback;
   };
 
   struct BinaryEventRegistration {
+    int id;
     std::string bucket;
     std::string key;
     BinaryEventCallback callback;
@@ -138,6 +140,7 @@ class CachearooConnection {
   std::vector<EventRegistration> event_registrations_;
   std::vector<BinaryEventRegistration> binary_event_registrations_;
   mutable std::mutex events_mutex_;
+  int listener_id_counter_{0};
 
   // Request handling
   std::map<std::string, std::unique_ptr<PendingRequest>> pending_requests_;
